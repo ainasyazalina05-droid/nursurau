@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // fail yang baru generate
 
 // User pages
-import 'pages/users/home_page.dart';
 
 // Admin pejabat
 //import 'pages/admin_pejabat/admin_pejabat_page.dart';
@@ -33,7 +30,8 @@ class MyApp extends StatelessWidget {
       ),
 
       // 👉 Change this to test different UIs
-      home: const HomePage(),
+      //home: const HomePage(),
+      home: const LoginPage(),
       // home: const AdminPejabatPage(),
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),
