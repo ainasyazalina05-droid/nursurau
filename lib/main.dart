@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // fail yang baru generate
 
 // User pages
 import 'pages/users/home_page.dart';
@@ -10,7 +12,11 @@ import 'pages/users/home_page.dart';
 //import 'pages/admin_ajk/admin_ajk_login.dart';
 //import 'pages/admin_ajk/admin_ajk_dashboard.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // penting untuk async
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // init Firebase
+  );
   runApp(const MyApp());
 }
 
