@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "546161973783",
+    "project_id": "nursurau",
+    "storage_bucket": "nursurau.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:546161973783:android:c42ff18fa846f3b383da52",
+        "android_client_info": {
+          "package_name": "com.example.nursurau"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGeC68fvTZk3NfZ46wwkzNMtl4MHer4Us"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
