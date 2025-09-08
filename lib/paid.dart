@@ -40,6 +40,8 @@ class OfficerDashboard extends StatelessWidget {
     {"surau": "Surau Ar Rahman", "ajk": "Rahman"},
   ];
 
+  OfficerDashboard({super.key}); // not const
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
