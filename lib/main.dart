@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:nursurau/pages/admin_ajk/login_page.dart';
 
 // User pages
-import 'pages/users/home_page.dart';
 
 // Admin pejabat
 //import 'pages/admin_pejabat/admin_pejabat_page.dart';
