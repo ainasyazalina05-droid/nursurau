@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nursurau/pages/admin_ajk/login_page.dart';
 
 // User pages
 import 'pages/users/home_page.dart';
@@ -27,7 +28,8 @@ class MyApp extends StatelessWidget {
       ),
 
       // 👉 Change this to test different UIs
-      home: const HomePage(),
+      //home: const HomePage(),
+      home: const LoginPage(),
       // home: const AdminPejabatPage(),
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),
