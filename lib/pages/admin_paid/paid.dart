@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'view_form.dart'; // import file lain
 
 void main() {
-  runApp(const SurauApp());
+  runApp(const AdminPaidPage());
 }
 
-class SurauApp extends StatelessWidget {
-  const SurauApp({super.key});
+class AdminPaidPage extends StatelessWidget {
+  const AdminPaidPage({super.key});
 
   @override
   Widget build(BuildContext context) {
