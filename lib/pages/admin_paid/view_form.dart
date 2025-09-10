@@ -12,7 +12,7 @@ class ViewForm extends StatelessWidget {
         .doc(docId)
         .update({"status": "approved"});
 
-    Navigator.pop(context); // balik semula ke dashboard
+    Navigator.pop(context); // balik ke dashboard
   }
 
   Future<void> _rejectForm(BuildContext context) async {
@@ -21,7 +21,7 @@ class ViewForm extends StatelessWidget {
         .doc(docId)
         .delete();
 
-    Navigator.pop(context); // balik semula ke dashboard
+    Navigator.pop(context); // balik ke dashboard
   }
 
   @override
