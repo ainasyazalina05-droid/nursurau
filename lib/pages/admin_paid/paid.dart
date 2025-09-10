@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'view_form.dart'; // import file lain
-
-void main() {
-  runApp(const AdminPaidPage());
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'view_form.dart';
 
 class AdminPaidPage extends StatelessWidget {
   const AdminPaidPage({super.key});
@@ -27,20 +24,14 @@ class AdminPaidPage extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFF2E7D32)),
         ),
       ),
-      home: OfficerDashboard(),
+      home: const OfficerDashboard(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class OfficerDashboard extends StatelessWidget {
-  final List<Map<String, String>> pendingList = [
-    {"surau": "Surau Falakhiah", "ajk": "Ahmad"},
-    {"surau": "Surau Nurul Iman Bumi Hijau", "ajk": "Siti"},
-    {"surau": "Surau Ar Rahman", "ajk": "Rahman"},
-  ];
-
-  OfficerDashboard({super.key}); // not const
+  const OfficerDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -59,53 +50,69 @@ class OfficerDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView.builder(
-                itemCount: pendingList.length,
-                itemBuilder: (context, index) {
-                  final item = pendingList[index];
-                  return Card(
-                    color: const Color(0xFFF5F2E7), // warna beige card
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.pending_actions,
-                        color: Color(0xFF2E7D32), // hijau icon
-                      ),
-                      title: Text(
-                        item["surau"]!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection("form")
+                    .where("status", isEqualTo: "pending")
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                        child: Text("No pending applications."));
+                  }
+
+                  var docs = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      var data = docs[index].data() as Map<String, dynamic>;
+                      return Card(
+                        color: const Color(0xFFF5F2E7), // warna beige card
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      subtitle: Text("AJK: ${item["ajk"]}"),
-                      trailing: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2E7D32), // hijau butang
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.pending_actions,
+                            color: Color(0xFF2E7D32),
                           ),
-                        ),
-                        child: const Text(
-                          "View Form",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ViewForm(
-                                surauName: item["surau"]!,
-                                ajkName: item["ajk"]!,
+                          title: Text(
+                            data["surauName"] ?? "No name",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          subtitle: Text("AJK: ${data["ajkName"] ?? "-"}"),
+                          trailing: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2E7D32),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                            child: const Text(
+                              "View Form",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ViewForm(
+                                    docId: docs[index].id,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
