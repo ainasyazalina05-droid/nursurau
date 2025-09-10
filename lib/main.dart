@@ -7,7 +7,7 @@ import 'firebase_options.dart';
 // User pages
 
 // Admin pejabat
-//import 'pages/admin_pejabat/admin_pejabat_page.dart';
+//import 'pages/admin_paid/paid.dart';
 
 // Admin ajk
 //import 'pages/admin_ajk/admin_ajk_login.dart';
