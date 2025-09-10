@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
 
 class ViewForm extends StatelessWidget {
   final String docId;
@@ -9,14 +8,11 @@ class ViewForm extends StatelessWidget {
 
   Future<void> _approveForm(BuildContext context) async {
     await FirebaseFirestore.instance
-        .collection("form") // sama dengan collection dalam Firestore
+        .collection("form")
         .doc(docId)
         .update({"status": "approved"});
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminPaidPage()),
-    );
+    Navigator.pop(context); // balik ke dashboard
   }
 
   Future<void> _rejectForm(BuildContext context) async {
@@ -25,7 +21,7 @@ class ViewForm extends StatelessWidget {
         .doc(docId)
         .delete();
 
-    Navigator.pop(context); // balik ke senarai
+    Navigator.pop(context); // balik ke dashboard
   }
 
   @override
@@ -33,15 +29,18 @@ class ViewForm extends StatelessWidget {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection("form").doc(docId).get(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(
+            body: Center(child: Text("Form not found.")),
+          );
+        }
 
         var data = snapshot.data!.data() as Map<String, dynamic>;
-        String surauName = data["surauName"] ?? "Unknown Surau";
-        String ajkName = data["ajkName"] ?? "Unknown AJK";
 
         return Scaffold(
           appBar: AppBar(
@@ -54,22 +53,22 @@ class ViewForm extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text("Surau Info",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text("Name: $surauName"),
-                Text("Address: ${data["address"] ?? "-"}"),
-                Text("Contact: ${data["contact"] ?? "-"}"),
+                Text("Name: ${data['surauName'] ?? '-'}"),
+                Text("Address: ${data['address'] ?? '-'}"),
+                Text("Contact: ${data['contact'] ?? '-'}"),
                 const SizedBox(height: 20),
-
                 const Text("AJK Info",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text("Name: $ajkName"),
-                Text("Email: ${data["email"] ?? "-"}"),
-                Text("Phone: ${data["phone"] ?? "-"}"),
-                Text("IC: ${data["ic"] ?? "-"}"),
+                Text("Name: ${data['ajkName'] ?? '-'}"),
+                Text("Email: ${data['email'] ?? '-'}"),
+                Text("Phone: ${data['phone'] ?? '-'}"),
+                Text("IC: ${data['ic'] ?? '-'}"),
                 const SizedBox(height: 30),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
