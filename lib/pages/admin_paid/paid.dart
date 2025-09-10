@@ -11,7 +11,7 @@ class AdminPaidPage extends StatelessWidget {
       title: 'Sistem Surau',
       theme: ThemeData(
         primaryColor: const Color(0xFF2E7D32),
-        scaffoldBackgroundColor: const Color(0xFFFAF8F0), // background cream
+        scaffoldBackgroundColor: const Color(0xFFFAF8F0),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -36,9 +36,7 @@ class OfficerDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("OFFICER DASHBOARD"),
-      ),
+      appBar: AppBar(title: const Text("OFFICER DASHBOARD")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -60,8 +58,7 @@ class OfficerDashboard extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                        child: Text("No pending applications."));
+                    return const Center(child: Text("No pending applications."));
                   }
 
                   var docs = snapshot.data!.docs;
@@ -70,16 +67,14 @@ class OfficerDashboard extends StatelessWidget {
                     itemBuilder: (context, index) {
                       var data = docs[index].data() as Map<String, dynamic>;
                       return Card(
-                        color: const Color(0xFFF5F2E7), // warna beige card
+                        color: const Color(0xFFF5F2E7),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
-                          leading: const Icon(
-                            Icons.pending_actions,
-                            color: Color(0xFF2E7D32),
-                          ),
+                          leading: const Icon(Icons.pending_actions,
+                              color: Color(0xFF2E7D32)),
                           title: Text(
                             data["surauName"] ?? "No name",
                             style: const TextStyle(
@@ -103,9 +98,8 @@ class OfficerDashboard extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => ViewForm(
-                                    docId: docs[index].id,
-                                  ),
+                                  builder: (_) =>
+                                      ViewForm(docId: docs[index].id),
                                 ),
                               );
                             },
