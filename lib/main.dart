@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nursurau/pages/admin_ajk/login_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:nursurau/pages/admin_paid/form_list_page.dart';
 import 'package:nursurau/pages/admin_paid/paid.dart';
 import 'package:nursurau/pages/users/home_page.dart';
 import 'firebase_options.dart';
@@ -39,7 +38,6 @@ class MyApp extends StatelessWidget {
       //home: const HomePage(),
       //home: const HomePage(),
       //home: const LoginPage(),
-       home: const FormListPage(),
        //home: const AdminPaidPage(),
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),
