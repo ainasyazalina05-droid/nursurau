@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
       //home: const HomePage(),
       //home: const HomePage(),
       //home: const LoginPage(),
-       //home: const AdminPaidPage(),
+       home: const AdminPaidPage(),
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),
     );
