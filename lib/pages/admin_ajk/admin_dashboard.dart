@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
 import 'donation_page.dart';
 import 'surau_details_page.dart';
-import 'login_page.dart'; // untuk logout nanti
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -13,7 +13,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
 
-  // Senarai page yang ada dalam dashboard
   final List<Widget> _pages = [
     const DonationPage(),
     const SurauDetailsPage(),
@@ -28,7 +27,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              // Bila tekan logout → balik ke LoginPage
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -37,20 +35,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
       ),
-
-      // Body akan ikut index yang dipilih
       body: _pages[_currentIndex],
-
-      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.volunteer_activism),
