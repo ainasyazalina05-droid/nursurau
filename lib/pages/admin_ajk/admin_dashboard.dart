@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'donation_page.dart';
 import 'surau_details_page.dart';
-import 'login_page.dart'; // untuk redirect semula ke login
+import 'login_page.dart'; // untuk logout nanti
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -13,18 +13,11 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
 
+  // Senarai page yang ada dalam dashboard
   final List<Widget> _pages = [
     const DonationPage(),
     const SurauDetailsPage(),
   ];
-
-  // 👉 Fungsi logout ada dalam class ni
-  void _logout() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +26,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
         title: const Text("Admin AJK Dashboard"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout, // panggil fungsi logout
-            tooltip: "Logout",
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // Bila tekan logout → balik ke LoginPage
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
           ),
         ],
       ),
+
+      // Body akan ikut index yang dipilih
       body: _pages[_currentIndex],
+
+      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: Colors.green,
@@ -52,11 +54,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.volunteer_activism),
-            label: "Donations",
+            label: "Derma",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance),
-            label: "Surau Details",
+            icon: Icon(Icons.mosque),
+            label: "Surau",
           ),
         ],
       ),
