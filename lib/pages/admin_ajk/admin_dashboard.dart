@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nursurau/pages/users/donations_page.dart';
 import 'login_page.dart';
 import 'donation_page.dart';
 import 'surau_details_page.dart';
@@ -14,7 +15,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const DonationPage(),
+    const DonationAdminPage(),
     const SurauDetailsPage(),
   ];
 

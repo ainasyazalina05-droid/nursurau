@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:nursurau/pages/admin_ajk/login_page.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
-import 'package:nursurau/pages/users/home_page.dart';
+import 'package:firebase_core/firebase_core.dart' show Firebase;
+import 'package:nursurau/pages/admin_ajk/login_page.dart' show LoginPage;
 import 'firebase_options.dart';
 
-
 // User pages
+// import 'pages/user/home_page.dart'; // Example user page
+// import 'pages/user/donation_page.dart'; // User donation page
 
 // Admin pejabat
-//import 'pages/admin_paid/paid.dart';
+// import 'pages/admin_paid/paid.dart';
 
 // Admin ajk
-//import 'pages/admin_ajk/admin_ajk_login.dart';
-//import 'pages/admin_ajk/admin_ajk_dashboard.dart';
+// import 'pages/admin_ajk/admin_ajk_login.dart';
+// import 'pages/admin_ajk/admin_ajk_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // penting untuk async
@@ -26,8 +25,24 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // ✅ Toggle to select which page to run
+  // Options: 'user', 'adminAjk', 'adminPejabat'
+  final String runPage = 'user';
+
   @override
   Widget build(BuildContext context) {
+    Widget selectedHome;
+
+    if (runPage == 'user') {
+      selectedHome = const LoginPage(); // or DonationPage/HomePage for user
+    } else if (runPage == 'adminAjk') {
+      selectedHome = const AdminAjkDashboard() as Widget;
+    } else if (runPage == 'adminPejabat') {
+      selectedHome = const AdminPaidPage() as Widget;
+    } else {
+      selectedHome = const LoginPage(); // fallback
+    }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "NurSurau",
@@ -35,15 +50,23 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
 
-      // 👉 Change this to test different UIs
-      //home: const HomePage(),
-      //home: const HomePage(),
-      //home: const LoginPage(),
+      // 👉 Selected page based on toggle
+      home: selectedHome,
+
+      // Example of old commented options kept:
+      // home: const HomePage(),
+      // home: const LoginPage(),
       // home: const AdminPaidPage(),
-       home: const LoginPage(),
-       //home: const AdminPaidPage(),
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),
     );
   }
+}
+
+class AdminPaidPage {
+  const AdminPaidPage();
+}
+
+class AdminAjkDashboard {
+  const AdminAjkDashboard();
 }
