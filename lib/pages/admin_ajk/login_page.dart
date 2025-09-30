@@ -27,10 +27,12 @@ class _LoginPageState extends State<LoginPage> {
 
     if (query.docs.isNotEmpty) {
       Navigator.pushReplacement(
+        // ignore: use_build_context_synchronously
         context,
         MaterialPageRoute(builder: (context) => const AdminDashboard()),
       );
     } else {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Invalid login")),
       );

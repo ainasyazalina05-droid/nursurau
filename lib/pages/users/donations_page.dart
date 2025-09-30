@@ -17,7 +17,7 @@ class DonationsPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('donations')
-            .orderBy('endDate')
+            .orderBy('createdAt', descending: true) // newest first
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -50,7 +50,14 @@ class DonationsPage extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text(data['description'] ?? ''),
+                      if (data['amount'] != null)
+                        Text('Jumlah Sasaran: RM ${data['amount']}'),
+                      if (data['description'] != null)
+                        Text('Keterangan: ${data['description']}'),
+                      if (data['account'] != null)
+                        Text('Bank / Akaun: ${data['account']}'),
+                      if (data['contact'] != null)
+                        Text('No Telefon AJK: ${data['contact']}'),
                       const SizedBox(height: 12),
                       if (data['qrUrl'] != null && data['qrUrl'] != "")
                         Center(
@@ -60,12 +67,17 @@ class DonationsPage extends StatelessWidget {
                             fit: BoxFit.contain,
                           ),
                         ),
-                      const SizedBox(height: 8),
-                      Text('Bank / Akaun: ${data['accountInfo'] ?? ''}',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
+<<<<<<< HEAD
                       Text(
                           'Tamat: ${data['endDate'].toDate().day}-${data['endDate'].toDate().month}-${data['endDate'].toDate().year}'),
+=======
+                      if (data['createdAt'] != null)
+                        Text(
+                          'Tarikh Cipta: ${DateTime.parse(data["createdAt"]).day}-${DateTime.parse(data["createdAt"]).month}-${DateTime.parse(data["createdAt"]).year}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+>>>>>>> 2261b72136d0326c96e4a6aca6287c35867fab14
                     ],
                   ),
                 ),
