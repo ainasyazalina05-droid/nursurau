@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:nursurau/pages/admin_ajk/login_page.dart' show LoginPage;
+import 'package:nursurau/pages/users/home_page.dart';
 import 'firebase_options.dart';
 
 // User pages
@@ -50,7 +51,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
 
-<<<<<<< HEAD
       // 👉 Change this to test different UIs
       //home: const HomePage(),
       home: const HomePage(),
@@ -58,15 +58,13 @@ class MyApp extends StatelessWidget {
       // home: const AdminPaidPage(),
       // home: const LoginPage(),
        //home: const AdminPaidPage(),
-=======
       // 👉 Selected page based on toggle
-      home: selectedHome,
+      // home: selectedHome,
 
       // Example of old commented options kept:
       // home: const HomePage(),
       // home: const LoginPage(),
       // home: const AdminPaidPage(),
->>>>>>> 2261b72136d0326c96e4a6aca6287c35867fab14
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),
     );
