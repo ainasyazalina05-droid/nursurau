@@ -68,16 +68,15 @@ class DonationsPage extends StatelessWidget {
                           ),
                         ),
                       const SizedBox(height: 4),
-<<<<<<< HEAD
+
                       Text(
                           'Tamat: ${data['endDate'].toDate().day}-${data['endDate'].toDate().month}-${data['endDate'].toDate().year}'),
-=======
+
                       if (data['createdAt'] != null)
                         Text(
                           'Tarikh Cipta: ${DateTime.parse(data["createdAt"]).day}-${DateTime.parse(data["createdAt"]).month}-${DateTime.parse(data["createdAt"]).year}',
                           style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
->>>>>>> 2261b72136d0326c96e4a6aca6287c35867fab14
                     ],
                   ),
                 ),
