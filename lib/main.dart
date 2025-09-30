@@ -37,10 +37,10 @@ class MyApp extends StatelessWidget {
 
       // 👉 Change this to test different UIs
       //home: const HomePage(),
-      //home: const HomePage(),
+      home: const HomePage(),
       //home: const LoginPage(),
       // home: const AdminPaidPage(),
-       home: const LoginPage(),
+      // home: const LoginPage(),
        //home: const AdminPaidPage(),
       // home: const AdminAjkLoginPage(),
       // home: const AdminAjkDashboard(),

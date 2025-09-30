@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SurauDetailsPage extends StatefulWidget {
   const SurauDetailsPage({super.key});
@@ -8,14 +9,6 @@ class SurauDetailsPage extends StatefulWidget {
 }
 
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
-  // Simpan senarai details
-  final List<Map<String, String>> _details = [
-    {"title": "Nama Surau", "value": "Surau Al-Falah"},
-    {"title": "Lokasi", "value": "Taman Seri Murni, Selangor"},
-    {"title": "Pengerusi", "value": "En. Ahmad Bin Ali"},
-    {"title": "Bendahari", "value": "Pn. Siti Binti Abu"},
-  ];
-
   // Function untuk tambah details baru
   void _addDetail() {
     final titleController = TextEditingController();
@@ -46,14 +39,17 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
             ),
             ElevatedButton(
               child: const Text("Simpan"),
-              onPressed: () {
+              onPressed: () async {
                 if (titleController.text.isNotEmpty &&
                     valueController.text.isNotEmpty) {
-                  setState(() {
-                    _details.add({
-                      "title": titleController.text,
-                      "value": valueController.text,
-                    });
+                  // 🔹 Simpan ke Firestore
+                  await FirebaseFirestore.instance
+                      .collection('surau_details')
+                      .add({
+                    "title": titleController.text,
+                    "value": valueController.text,
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "surauId": "surau1", // unik ID untuk setiap surau
                   });
                 }
                 Navigator.pop(context);
@@ -68,12 +64,36 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: _details
-            .map((detail) =>
-                buildDetailCard(detail["title"]!, detail["value"]!))
-            .toList(),
+      appBar: AppBar(
+        title: const Text("Butiran Surau (Admin)"),
+        backgroundColor: Colors.green,
+      ),
+
+      // 🔹 Guna StreamBuilder untuk paparkan data Firestore
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('surau_details')
+            .where("surauId", isEqualTo: "surau1") // tapis ikut surau
+            .orderBy("createdAt", descending: false)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Tiada butiran surau lagi."));
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return buildDetailCard(data["title"], data["value"]);
+            }).toList(),
+          );
+        },
       ),
 
       // 👉 Button paling bawah
@@ -111,6 +131,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         trailing: IconButton(
           icon: const Icon(Icons.edit, color: Colors.blue),
           onPressed: () {
+            // nanti boleh tambah edit function
           },
         ),
       ),

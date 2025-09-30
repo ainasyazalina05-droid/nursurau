@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notifications_page.dart';
+import 'home_page.dart';
+import 'help_page.dart';
 
 class DonationsPage extends StatelessWidget {
   const DonationsPage({super.key});
@@ -61,7 +64,8 @@ class DonationsPage extends StatelessWidget {
                       Text('Bank / Akaun: ${data['accountInfo'] ?? ''}',
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('Tamat: ${data['endDate'].toDate().day}-${data['endDate'].toDate().month}-${data['endDate'].toDate().year}'),
+                      Text(
+                          'Tamat: ${data['endDate'].toDate().day}-${data['endDate'].toDate().month}-${data['endDate'].toDate().year}'),
                     ],
                   ),
                 ),
@@ -69,6 +73,36 @@ class DonationsPage extends StatelessWidget {
             },
           );
         },
+      ),
+
+      // 📌 Bottom Navigation (same as HomePage)
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFFF5E2B8),
+        currentIndex: 2, // ✅ highlight "Donasi" here
+        selectedItemColor: const Color(0xFF2F5D50),
+        unselectedItemColor: Colors.black87,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const NotificationsPage()));
+          } else if (index == 1) {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const HomePage()));
+          } else if (index == 2) {
+            // Already in Donations
+          } else if (index == 3) {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const HelpPage()));
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.notifications), label: "Notifikasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Utama"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.attach_money), label: "Donasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: "Bantuan"),
+        ],
       ),
     );
   }
