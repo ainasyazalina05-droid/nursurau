@@ -213,14 +213,14 @@ class HomePage extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => const SurauDetailsPage(
-                  surauName: "Surau Al-Hidayah"),
+                  surauName: "Surau Falakhiah"),
             ),
           );
         },
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: Image.asset(
-            "assets/surau3.jpg",
+            "assets/surau4.webp",
             height: 180,
             width: double.infinity,
             fit: BoxFit.cover,
@@ -228,9 +228,9 @@ class HomePage extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 8),
-      const Text("Surau Al-Hidayah"),
+      const Text("Surau Falakhiah"),
 
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
             ],
           ),
         ),
