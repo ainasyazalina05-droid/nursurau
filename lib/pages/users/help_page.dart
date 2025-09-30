@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'notifications_page.dart';
+import 'home_page.dart';
+import 'donations_page.dart';
 
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
@@ -38,6 +41,36 @@ class HelpPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+
+      // 📌 Bottom Navigation (same as others)
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFFF5E2B8),
+        currentIndex: 3, // ✅ highlight "Bantuan" here
+        selectedItemColor: const Color(0xFF2F5D50),
+        unselectedItemColor: Colors.black87,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const NotificationsPage()));
+          } else if (index == 1) {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const HomePage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const DonationsPage()));
+          } else if (index == 3) {
+            // Already in HelpPage
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.notifications), label: "Notifikasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Utama"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.attach_money), label: "Donasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: "Bantuan"),
+        ],
       ),
     );
   }
