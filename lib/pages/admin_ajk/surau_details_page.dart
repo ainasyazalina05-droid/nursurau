@@ -1,232 +1,93 @@
-import 'dart:io';
+// surau_details_page.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/follow_services.dart';
 
 class SurauDetailsPage extends StatefulWidget {
-  const SurauDetailsPage({super.key});
+  final String surauName;
+
+  const SurauDetailsPage({super.key, required this.surauName});
 
   @override
   State<SurauDetailsPage> createState() => _SurauDetailsPageState();
 }
 
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
-  final _firestore = FirebaseFirestore.instance;
-  final _picker = ImagePicker();
+  bool isFollowed = false;
 
-  // --- Edit main fields individually ---
-  Future<void> _editField(String title, String currentValue, Map<String, dynamic> data) async {
-    final controller = TextEditingController(text: currentValue);
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Kemaskini $title"),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: title),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _firestore.collection("surauDetails").doc("main").update({
-                if (title == "Nama Surau") "namaSurau": controller.text,
-                if (title == "Lokasi") "lokasi": controller.text,
-                if (title == "Kapasiti") "kapasiti": controller.text,
-                "tarikhKemaskini": DateTime.now().toIso8601String(),
-              });
-              if (mounted) Navigator.pop(ctx);
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _loadFollowStatus();
   }
 
-  // --- Add new sub-entry (title, description, image) ---
-  Future<void> _addSubEntry() async {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-    File? imageFile;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Tambah Maklumat Baru"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleController, decoration: const InputDecoration(labelText: "Tajuk")),
-              TextField(controller: descController, decoration: const InputDecoration(labelText: "Keterangan"), maxLines: 3),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.image),
-                label: const Text("Pilih Gambar"),
-                onPressed: () async {
-                  final picked = await _picker.pickImage(source: ImageSource.gallery);
-                  if (picked != null && mounted) setState(() => imageFile = File(picked.path));
-                },
-              ),
-              if (imageFile != null) Image.file(imageFile!, height: 120),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              String? imageUrl;
-              if (imageFile != null) {
-                final ref = FirebaseStorage.instance
-                    .ref("surau_sub_entries/${DateTime.now().millisecondsSinceEpoch}.jpg");
-                await ref.putFile(imageFile!);
-                imageUrl = await ref.getDownloadURL();
-              }
-
-              await _firestore.collection("surauDetails").doc("main")
-                  .collection("subEntries").add({
-                "title": titleController.text,
-                "description": descController.text,
-                "imageUrl": imageUrl,
-                "createdAt": DateTime.now().toIso8601String(),
-              });
-
-              // Update main doc's tarikhKemaskini automatically
-              await _firestore.collection("surauDetails").doc("main").update({
-                "tarikhKemaskini": DateTime.now().toIso8601String(),
-              });
-
-              if (mounted) Navigator.pop(ctx);
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
-      ),
-    );
+  Future<void> _loadFollowStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isFollowed = prefs.getBool("follow_${widget.surauName}") ?? false;
+    });
   }
 
-  // --- Build main detail card ---
-  Widget buildDetailCard(String title, String value, Map<String, dynamic> data) {
-    return Card(
-      color: const Color(0xFFF5EFD1),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(value),
-        trailing: IconButton(
-          icon: const Icon(Icons.edit, color: Colors.green),
-          onPressed: () => _editField(title, value, data),
-        ),
-      ),
-    );
+  Future<void> _toggleFollow() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isFollowed = !isFollowed;
+    });
+    await prefs.setBool("follow_${widget.surauName}", isFollowed);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Maklumat Surau")),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection("surauDetails").doc("main").snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("Belum ada maklumat, sila tambah."));
-          }
-
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-
-          // Format tarikh kemaskini
-          final tarikhKemaskini =
-              "${DateTime.parse(data["tarikhKemaskini"]).day}-${DateTime.parse(data["tarikhKemaskini"]).month}-${DateTime.parse(data["tarikhKemaskini"]).year}";
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Main surau image
-              if (data["imageUrl"] != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(data["imageUrl"], height: 200, fit: BoxFit.cover),
-                ),
-              const SizedBox(height: 12),
-
-              // Main fields
-              buildDetailCard("Nama Surau", data["namaSurau"], data),
-              buildDetailCard("Lokasi", data["lokasi"], data),
-              buildDetailCard("Kapasiti", data["kapasiti"], data),
-
-              const SizedBox(height: 12),
-
-              // --- Sub-entries ---
-              StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection("surauDetails")
-                    .doc("main")
-                    .collection("subEntries")
-                    .orderBy("createdAt", descending: true) // newest on top
-                    .snapshots(), // <--- add this!
-                builder: (context, subSnapshot) {
-                  if (!subSnapshot.hasData || subSnapshot.data!.docs.isEmpty) return const SizedBox();
-                  final docs = subSnapshot.data!.docs;
-                  return Column(
-                    children: docs.map((doc) {
-                      final subData = doc.data()! as Map<String, dynamic>;
-                      return Card(
-                        color: const Color(0xFFF5EFD1),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(subData["title"] ?? ""),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (subData["description"] != null) Text(subData["description"]),
-                              if (subData["imageUrl"] != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Image.network(subData["imageUrl"], height: 120),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-
-
-              const SizedBox(height: 10),
-
-              // Tarikh Kemaskini fixed at bottom
-              Text(
-                "Tarikh Kemaskini: $tarikhKemaskini",
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-            ],
-          );
-        },
+      backgroundColor: const Color(0xFFEFE5D8),
+      appBar: AppBar(
+        title: Text(widget.surauName),
+        backgroundColor: const Color(0xFF2F5D50),
       ),
-      // --- Bottom button only adds sub-entry ---
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: _addSubEntry,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text("Tambah Maklumat Baru", style: TextStyle(color: Colors.white)),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                "assets/surau1.jpg",
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.surauName,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Keterangan surau ini akan dipaparkan di sini. Anda boleh menambah maklumat lanjut seperti lokasi, aktiviti, atau kemudahan.",
+              style: TextStyle(fontSize: 16),
+            ),
+            const Spacer(),
+            Center(
+              child: ElevatedButton(
+                onPressed: _toggleFollow,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isFollowed ? Colors.red : const Color(0xFF2F5D50),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  isFollowed ? "Unfollow" : "Follow",
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            )
+          ],
         ),
       ),
     );
