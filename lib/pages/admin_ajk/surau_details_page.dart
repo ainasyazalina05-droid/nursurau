@@ -1,6 +1,9 @@
 // surau_details_page.dart
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/follow_services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class SurauDetailsPage extends StatefulWidget {
   final String surauName;
@@ -12,29 +15,9 @@ class SurauDetailsPage extends StatefulWidget {
 }
 
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
-  bool isFollowed = false;
+  final _firestore = FirebaseFirestore.instance;
+  final _picker = ImagePicker();
 
-<<<<<<< HEAD
-  @override
-  void initState() {
-    super.initState();
-    _loadFollowStatus();
-  }
-
-  Future<void> _loadFollowStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isFollowed = prefs.getBool("follow_${widget.surauName}") ?? false;
-    });
-  }
-
-  Future<void> _toggleFollow() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isFollowed = !isFollowed;
-    });
-    await prefs.setBool("follow_${widget.surauName}", isFollowed);
-=======
   // --- Edit main fields (nama, lokasi, kapasiti) ---
   Future<void> _editField(String title, String currentValue, String fieldKey) async {
     final controller = TextEditingController(text: currentValue);
@@ -82,8 +65,15 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: titleController, decoration: const InputDecoration(labelText: "Tajuk")),
-                TextField(controller: descController, decoration: const InputDecoration(labelText: "Keterangan"), maxLines: 3),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: "Tajuk"),
+                ),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: "Keterangan"),
+                  maxLines: 3,
+                ),
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.image),
@@ -115,8 +105,11 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   imageUrl = await ref.getDownloadURL();
                 }
 
-                await _firestore.collection("surauDetails").doc("main")
-                    .collection("subEntries").add({
+                await _firestore
+                    .collection("surauDetails")
+                    .doc("main")
+                    .collection("subEntries")
+                    .add({
                   "title": titleController.text,
                   "description": descController.text,
                   "imageUrl": imageUrl,
@@ -136,7 +129,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     );
   }
 
-  // --- Build reusable card for main fields ---
+  // --- Reusable card untuk main fields ---
   Widget buildMainCard(String title, String value, String fieldKey) {
     return Card(
       color: const Color(0xFFF5EFD1),
@@ -150,66 +143,14 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         ),
       ),
     );
->>>>>>> 9e5e2c5c63933b958b71a620ea140dc7999fe964
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
       backgroundColor: const Color(0xFFEFE5D8),
       appBar: AppBar(
-        title: Text(widget.surauName),
-        backgroundColor: const Color(0xFF2F5D50),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                "assets/surau1.jpg",
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.surauName,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "Keterangan surau ini akan dipaparkan di sini. Anda boleh menambah maklumat lanjut seperti lokasi, aktiviti, atau kemudahan.",
-              style: TextStyle(fontSize: 16),
-            ),
-            const Spacer(),
-            Center(
-              child: ElevatedButton(
-                onPressed: _toggleFollow,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isFollowed ? Colors.red : const Color(0xFF2F5D50),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  isFollowed ? "Unfollow" : "Follow",
-                  style: const TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            )
-          ],
-=======
-      appBar: AppBar(
-        title: const Text("Butiran Surau (Admin)"),
+        title: Text("Butiran Surau: ${widget.surauName}"),
         backgroundColor: Colors.green,
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -243,7 +184,9 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
               const Text("Maklumat Tambahan:", style: TextStyle(fontWeight: FontWeight.bold)),
 
               StreamBuilder<QuerySnapshot>(
-                stream: _firestore.collection("surauDetails").doc("main")
+                stream: _firestore
+                    .collection("surauDetails")
+                    .doc("main")
                     .collection("subEntries")
                     .orderBy("createdAt", descending: true)
                     .snapshots(),
@@ -263,7 +206,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (subData["description"] != null) Text(subData["description"]),
+                              if (subData["description"] != null)
+                                Text(subData["description"]),
                               if (subData["imageUrl"] != null)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
@@ -295,7 +239,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           onPressed: _addSubEntry,
           icon: const Icon(Icons.add, color: Colors.white),
           label: const Text("Tambah Butiran Baru", style: TextStyle(color: Colors.white)),
->>>>>>> 9e5e2c5c63933b958b71a620ea140dc7999fe964
         ),
       ),
     );

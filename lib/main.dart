@@ -34,9 +34,9 @@ class MyApp extends StatelessWidget {
       ),
 
       // 👉 You switch this manually depending on role/page you want to run:
-      home: const LoginPage(),
+      //home: const LoginPage(),
       // 👉 Change this to test different UIs
-      //home: const HomePage(),
+      home: const HomePage(),
       //home: const LoginPage(),
        //home: const AdminPaidPage(),
       // 👉 Selected page based on toggle
