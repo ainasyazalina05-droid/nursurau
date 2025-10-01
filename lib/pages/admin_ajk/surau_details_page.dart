@@ -1,15 +1,14 @@
-import 'dart:io';
+// surau_details_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-<<<<<<< HEAD
-=======
 import 'dart:io';
->>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
 
 class SurauDetailsPage extends StatefulWidget {
-  const SurauDetailsPage({super.key});
+  final String surauName;
+
+  const SurauDetailsPage({super.key, required this.surauName});
 
   @override
   State<SurauDetailsPage> createState() => _SurauDetailsPageState();
@@ -19,13 +18,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   final _firestore = FirebaseFirestore.instance;
   final _picker = ImagePicker();
 
-<<<<<<< HEAD
-  // --- Edit main fields individually ---
-  Future<void> _editField(String title, String currentValue, Map<String, dynamic> data) async {
-=======
   // --- Edit main fields (nama, lokasi, kapasiti) ---
   Future<void> _editField(String title, String currentValue, String fieldKey) async {
->>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
     final controller = TextEditingController(text: currentValue);
 
     await showDialog(
@@ -44,9 +38,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           ElevatedButton(
             onPressed: () async {
               await _firestore.collection("surauDetails").doc("main").update({
-                if (title == "Nama Surau") "namaSurau": controller.text,
-                if (title == "Lokasi") "lokasi": controller.text,
-                if (title == "Kapasiti") "kapasiti": controller.text,
+                fieldKey: controller.text,
                 "tarikhKemaskini": DateTime.now().toIso8601String(),
               });
               if (mounted) Navigator.pop(ctx);
@@ -58,7 +50,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     );
   }
 
-  // --- Add new sub-entry (title, description, image) ---
+  // --- Add new sub-entry (title, description, optional image) ---
   Future<void> _addSubEntry() async {
     final titleController = TextEditingController();
     final descController = TextEditingController();
@@ -66,28 +58,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
     await showDialog(
       context: context,
-<<<<<<< HEAD
-      builder: (ctx) => AlertDialog(
-        title: const Text("Tambah Maklumat Baru"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleController, decoration: const InputDecoration(labelText: "Tajuk")),
-              TextField(controller: descController, decoration: const InputDecoration(labelText: "Keterangan"), maxLines: 3),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.image),
-                label: const Text("Pilih Gambar"),
-                onPressed: () async {
-                  final picked = await _picker.pickImage(source: ImageSource.gallery);
-                  if (picked != null && mounted) setState(() => imageFile = File(picked.path));
-                },
-              ),
-              if (imageFile != null) Image.file(imageFile!, height: 120),
-            ],
-          ),
-=======
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
           title: const Text("Tambah Maklumat Baru"),
@@ -154,52 +124,13 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
               },
             ),
           ],
->>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              String? imageUrl;
-              if (imageFile != null) {
-                final ref = FirebaseStorage.instance
-                    .ref("surau_sub_entries/${DateTime.now().millisecondsSinceEpoch}.jpg");
-                await ref.putFile(imageFile!);
-                imageUrl = await ref.getDownloadURL();
-              }
-
-              await _firestore.collection("surauDetails").doc("main")
-                  .collection("subEntries").add({
-                "title": titleController.text,
-                "description": descController.text,
-                "imageUrl": imageUrl,
-                "createdAt": DateTime.now().toIso8601String(),
-              });
-
-              // Update main doc's tarikhKemaskini automatically
-              await _firestore.collection("surauDetails").doc("main").update({
-                "tarikhKemaskini": DateTime.now().toIso8601String(),
-              });
-
-              if (mounted) Navigator.pop(ctx);
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
       ),
     );
   }
 
-<<<<<<< HEAD
-  // --- Build main detail card ---
-  Widget buildDetailCard(String title, String value, Map<String, dynamic> data) {
-=======
   // --- Reusable card untuk main fields ---
   Widget buildMainCard(String title, String value, String fieldKey) {
->>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
     return Card(
       color: const Color(0xFFF5EFD1),
       margin: const EdgeInsets.only(bottom: 12),
@@ -208,7 +139,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         subtitle: Text(value),
         trailing: IconButton(
           icon: const Icon(Icons.edit, color: Colors.green),
-          onPressed: () => _editField(title, value, data),
+          onPressed: () => _editField(title, value, fieldKey),
         ),
       ),
     );
@@ -217,15 +148,11 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      appBar: AppBar(title: const Text("Maklumat Surau")),
-=======
       backgroundColor: const Color(0xFFEFE5D8),
       appBar: AppBar(
         title: Text("Butiran Surau: ${widget.surauName}"),
         backgroundColor: Colors.green,
       ),
->>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
       body: StreamBuilder<DocumentSnapshot>(
         stream: _firestore.collection("surauDetails").doc("main").snapshots(),
         builder: (context, snapshot) {
@@ -235,14 +162,13 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
-          // Format tarikh kemaskini
-          final tarikhKemaskini =
-              "${DateTime.parse(data["tarikhKemaskini"]).day}-${DateTime.parse(data["tarikhKemaskini"]).month}-${DateTime.parse(data["tarikhKemaskini"]).year}";
+          final tarikhKemaskini = data["tarikhKemaskini"] != null
+              ? "${DateTime.parse(data["tarikhKemaskini"]).day}-${DateTime.parse(data["tarikhKemaskini"]).month}-${DateTime.parse(data["tarikhKemaskini"]).year}"
+              : "-";
 
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Main surau image
               if (data["imageUrl"] != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -250,23 +176,24 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                 ),
               const SizedBox(height: 12),
 
-              // Main fields
-              buildDetailCard("Nama Surau", data["namaSurau"], data),
-              buildDetailCard("Lokasi", data["lokasi"], data),
-              buildDetailCard("Kapasiti", data["kapasiti"], data),
+              buildMainCard("Nama Surau", data["namaSurau"] ?? "-", "namaSurau"),
+              buildMainCard("Lokasi", data["lokasi"] ?? "-", "lokasi"),
+              buildMainCard("Kapasiti", data["kapasiti"] ?? "-", "kapasiti"),
 
               const SizedBox(height: 12),
+              const Text("Maklumat Tambahan:", style: TextStyle(fontWeight: FontWeight.bold)),
 
-              // --- Sub-entries ---
               StreamBuilder<QuerySnapshot>(
                 stream: _firestore
                     .collection("surauDetails")
                     .doc("main")
                     .collection("subEntries")
-                    .orderBy("createdAt", descending: true) // newest on top
-                    .snapshots(), // <--- add this!
+                    .orderBy("createdAt", descending: true)
+                    .snapshots(),
                 builder: (context, subSnapshot) {
-                  if (!subSnapshot.hasData || subSnapshot.data!.docs.isEmpty) return const SizedBox();
+                  if (!subSnapshot.hasData || subSnapshot.data!.docs.isEmpty) {
+                    return const Text("Tiada maklumat tambahan.");
+                  }
                   final docs = subSnapshot.data!.docs;
                   return Column(
                     children: docs.map((doc) {
@@ -295,19 +222,12 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                 },
               ),
 
-
               const SizedBox(height: 10),
-
-              // Tarikh Kemaskini fixed at bottom
-              Text(
-                "Tarikh Kemaskini: $tarikhKemaskini",
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
+              Text("Tarikh Kemaskini: $tarikhKemaskini"),
             ],
           );
         },
       ),
-      // --- Bottom button only adds sub-entry ---
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton.icon(
@@ -318,11 +238,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           ),
           onPressed: _addSubEntry,
           icon: const Icon(Icons.add, color: Colors.white),
-<<<<<<< HEAD
-          label: const Text("Tambah Maklumat Baru", style: TextStyle(color: Colors.white)),
-=======
           label: const Text("Tambah Butiran Baru", style: TextStyle(color: Colors.white)),
->>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
         ),
       ),
     );
