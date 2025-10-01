@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+<<<<<<< HEAD
+=======
+import 'dart:io';
+>>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
 
 class SurauDetailsPage extends StatefulWidget {
   const SurauDetailsPage({super.key});
@@ -15,8 +19,13 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   final _firestore = FirebaseFirestore.instance;
   final _picker = ImagePicker();
 
+<<<<<<< HEAD
   // --- Edit main fields individually ---
   Future<void> _editField(String title, String currentValue, Map<String, dynamic> data) async {
+=======
+  // --- Edit main fields (nama, lokasi, kapasiti) ---
+  Future<void> _editField(String title, String currentValue, String fieldKey) async {
+>>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
     final controller = TextEditingController(text: currentValue);
 
     await showDialog(
@@ -57,6 +66,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
     await showDialog(
       context: context,
+<<<<<<< HEAD
       builder: (ctx) => AlertDialog(
         title: const Text("Tambah Maklumat Baru"),
         content: SingleChildScrollView(
@@ -77,6 +87,74 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
               if (imageFile != null) Image.file(imageFile!, height: 120),
             ],
           ),
+=======
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text("Tambah Maklumat Baru"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: "Tajuk"),
+                ),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: "Keterangan"),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.image),
+                  label: const Text("Pilih Gambar"),
+                  onPressed: () async {
+                    final picked = await _picker.pickImage(source: ImageSource.gallery);
+                    if (picked != null) {
+                      setStateDialog(() => imageFile = File(picked.path));
+                    }
+                  },
+                ),
+                if (imageFile != null) Image.file(imageFile!, height: 120),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Batal"),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+            ElevatedButton(
+              child: const Text("Simpan"),
+              onPressed: () async {
+                String? imageUrl;
+                if (imageFile != null) {
+                  final ref = FirebaseStorage.instance
+                      .ref("surau_sub_entries/${DateTime.now().millisecondsSinceEpoch}.jpg");
+                  await ref.putFile(imageFile!);
+                  imageUrl = await ref.getDownloadURL();
+                }
+
+                await _firestore
+                    .collection("surauDetails")
+                    .doc("main")
+                    .collection("subEntries")
+                    .add({
+                  "title": titleController.text,
+                  "description": descController.text,
+                  "imageUrl": imageUrl,
+                  "createdAt": DateTime.now().toIso8601String(),
+                });
+
+                await _firestore.collection("surauDetails").doc("main").update({
+                  "tarikhKemaskini": DateTime.now().toIso8601String(),
+                });
+
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+          ],
+>>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
         ),
         actions: [
           TextButton(
@@ -115,8 +193,13 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     );
   }
 
+<<<<<<< HEAD
   // --- Build main detail card ---
   Widget buildDetailCard(String title, String value, Map<String, dynamic> data) {
+=======
+  // --- Reusable card untuk main fields ---
+  Widget buildMainCard(String title, String value, String fieldKey) {
+>>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
     return Card(
       color: const Color(0xFFF5EFD1),
       margin: const EdgeInsets.only(bottom: 12),
@@ -134,7 +217,15 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       appBar: AppBar(title: const Text("Maklumat Surau")),
+=======
+      backgroundColor: const Color(0xFFEFE5D8),
+      appBar: AppBar(
+        title: Text("Butiran Surau: ${widget.surauName}"),
+        backgroundColor: Colors.green,
+      ),
+>>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
       body: StreamBuilder<DocumentSnapshot>(
         stream: _firestore.collection("surauDetails").doc("main").snapshots(),
         builder: (context, snapshot) {
@@ -188,7 +279,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (subData["description"] != null) Text(subData["description"]),
+                              if (subData["description"] != null)
+                                Text(subData["description"]),
                               if (subData["imageUrl"] != null)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
@@ -226,7 +318,11 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           ),
           onPressed: _addSubEntry,
           icon: const Icon(Icons.add, color: Colors.white),
+<<<<<<< HEAD
           label: const Text("Tambah Maklumat Baru", style: TextStyle(color: Colors.white)),
+=======
+          label: const Text("Tambah Butiran Baru", style: TextStyle(color: Colors.white)),
+>>>>>>> 032f816fe96d37d7f3c1a3af06bbd91417e2bce8
         ),
       ),
     );

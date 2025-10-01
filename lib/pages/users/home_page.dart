@@ -182,29 +182,31 @@ class HomePage extends StatelessWidget {
 
               // Surau 2
       GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const SurauDetailsPage(
-                  surauName: "Musolla As-Solihin"),
-            ),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(
-            "assets/surau3.jpg",
-            height: 180,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-      const SizedBox(height: 8),
-      const Text("Musolla As-Solihin"),
-
-      const SizedBox(height: 20),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SurauDetailsPage(
+                                surauName: "Musolla As-Solihin"),
+                          ),
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          "assets/surau3.jpg",
+                          height: 180, // ⬆️ bigger
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text("Musolla As-Solihin"),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
 
       // Surau 3
       GestureDetector(
