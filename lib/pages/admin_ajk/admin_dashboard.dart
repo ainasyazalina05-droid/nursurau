@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nursurau/pages/users/donations_page.dart';
 import 'login_page.dart';
 import 'donation_page.dart';
 import 'surau_details_page.dart';
