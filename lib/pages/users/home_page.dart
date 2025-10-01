@@ -64,10 +64,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     const Text(
                       "SURAU DIIKUTI:",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -91,10 +88,8 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      "Surau At-Taufik",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    const Text("Surau At-Taufik",
+                        style: TextStyle(color: Colors.white)),
                   ],
                 ),
               ),
@@ -138,31 +133,22 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
-              // 🕌 Surau Tersedia
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5E2B8),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    )
-                  ],
-                ),
+              // 🕌 Surau Tersedia (setiap surau 1 kotak)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
                       "SURAU TERSEDIA:",
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
 
                     // Surau 1
-                    GestureDetector(
+                    SurauCard(
+                      title: "Surau Raudhatul Jannah",
+                      imagePath: "assets/surau2.jpg",
                       onTap: () {
                         Navigator.push(
                           context,
@@ -172,23 +158,12 @@ class HomePage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          "assets/surau2.jpg",
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text("Surau Raudhatul Jannah"),
-
-                    const SizedBox(height: 20),
 
                     // Surau 2
-                    GestureDetector(
+                    SurauCard(
+                      title: "Musolla As-Solihin",
+                      imagePath: "assets/surau3.jpg",
                       onTap: () {
                         Navigator.push(
                           context,
@@ -198,23 +173,12 @@ class HomePage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          "assets/surau3.jpg",
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text("Musolla As-Solihin"),
-
-                    const SizedBox(height: 20),
 
                     // Surau 3
-                    GestureDetector(
+                    SurauCard(
+                      title: "Surau Falakhiah",
+                      imagePath: "assets/surau4.webp",
                       onTap: () {
                         Navigator.push(
                           context,
@@ -224,23 +188,12 @@ class HomePage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          "assets/surau4.webp",
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text("Surau Falakhiah"),
-
-                    const SizedBox(height: 20),
 
                     // Surau 4
-                    GestureDetector(
+                    SurauCard(
+                      title: "Surau Nurul Iman",
+                      imagePath: "assets/surau5.jpg",
                       onTap: () {
                         Navigator.push(
                           context,
@@ -250,18 +203,7 @@ class HomePage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          "assets/surau5.jpg",
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text("Surau Nurul Iman"),
                   ],
                 ),
               ),
@@ -278,22 +220,16 @@ class HomePage extends StatelessWidget {
         unselectedItemColor: Colors.black87,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsPage()),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const NotificationsPage()));
           } else if (index == 1) {
             // Already Home
           } else if (index == 2) {
             Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DonationsPage()),
-            );
+                context, MaterialPageRoute(builder: (_) => const DonationsPage()));
           } else if (index == 3) {
             Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HelpPage()),
-            );
+                context, MaterialPageRoute(builder: (_) => const HelpPage()));
           }
         },
         items: const [
@@ -303,6 +239,57 @@ class HomePage extends StatelessWidget {
           BottomNavigationBarItem(
               icon: Icon(Icons.attach_money), label: "Donasi"),
           BottomNavigationBarItem(icon: Icon(Icons.info), label: "Bantuan"),
+        ],
+      ),
+    );
+  }
+}
+
+// 🔹 Widget reusable untuk Surau
+class SurauCard extends StatelessWidget {
+  final String title;
+  final String imagePath;
+  final VoidCallback onTap;
+
+  const SurauCard({
+    super.key,
+    required this.title,
+    required this.imagePath,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5E2B8),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 4,
+            offset: Offset(2, 2),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: onTap,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                imagePath,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
         ],
       ),
     );
