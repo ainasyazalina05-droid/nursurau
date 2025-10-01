@@ -179,6 +179,83 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Surau 2
+      GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SurauDetailsPage(
+                  surauName: "Musolla As-Solihin"),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            "assets/surau3.jpg",
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+      const Text("Musolla As-Solihin"),
+
+      const SizedBox(height: 20),
+
+      // Surau 3
+      GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SurauDetailsPage(
+                  surauName: "Surau Falakhiah"),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            "assets/surau4.webp",
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+      const Text("Surau Falakhiah"),
+
+      const SizedBox(height: 20),
+       // Surau 3
+      GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SurauDetailsPage(
+                  surauName: "Surau Nurul Iman"),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            "assets/surau5.jpg",
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+      const Text("Surau Nurul Iman "),
+
+      const SizedBox(height: 20),
             ],
           ),
         ),

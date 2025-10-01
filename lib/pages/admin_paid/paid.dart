@@ -7,9 +7,8 @@ class AdminPaidPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sistem Surau',
-      theme: ThemeData(
+    return Theme(
+      data: ThemeData(
         primaryColor: const Color(0xFF2E7D32),
         scaffoldBackgroundColor: const Color(0xFFFAF8F0),
         appBarTheme: const AppBarTheme(
@@ -24,8 +23,7 @@ class AdminPaidPage extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFF2E7D32)),
         ),
       ),
-      home: const OfficerDashboard(),
-      debugShowCheckedModeBanner: false,
+      child: const OfficerDashboard(),
     );
   }
 }
@@ -58,7 +56,8 @@ class OfficerDashboard extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text("No pending applications."));
+                    return const Center(
+                        child: Text("No pending applications."));
                   }
 
                   var docs = snapshot.data!.docs;
