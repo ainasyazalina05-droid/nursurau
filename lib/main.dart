@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart' show Firebase;
-import 'package:nursurau/pages/admin_ajk/login_page.dart' show LoginPage;
 import 'package:nursurau/pages/users/home_page.dart' show HomePage;
 
 
@@ -40,6 +39,7 @@ class MyApp extends StatelessWidget {
       //home: const LoginPage(),
       // 👉 Change this to test different UIs
       home: const HomePage(),
+      
       //home: const LoginPage(),
        //home: const AdminPaidPage(),
       // 👉 Selected page based on toggle

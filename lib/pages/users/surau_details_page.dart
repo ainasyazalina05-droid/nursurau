@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'follow_service.dart'; // import the service
 
 class SurauDetailsPage extends StatefulWidget {
   final String surauName;
@@ -12,6 +14,37 @@ class SurauDetailsPage extends StatefulWidget {
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
   final _firestore = FirebaseFirestore.instance;
   bool isFollowing = false;
+  String _currentImageUrl = ""; // will be updated when data loads
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFollowStatus();
+  }
+
+  Future<void> _loadFollowStatus() async {
+    final followed = await FollowService.isFollowedByName(widget.surauName);
+    setState(() {
+      isFollowing = followed;
+    });
+  }
+
+  Future<void> _toggleFollow() async {
+    // toggle using the FollowService - uses name + current image
+    await FollowService.toggleFollowByName(widget.surauName, _currentImageUrl);
+    final followed = await FollowService.isFollowedByName(widget.surauName);
+    setState(() {
+      isFollowing = followed;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isFollowing ? "You followed this surau!" : "You unfollowed this surau!",
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,28 +59,18 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  isFollowing = !isFollowing;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isFollowing
-                          ? "You followed this surau!"
-                          : "You unfollowed this surau!",
-                    ),
-                  ),
-                );
-              },
+              onPressed: _toggleFollow,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing ? Colors.grey[600] : Colors.orangeAccent,
+                backgroundColor:
+                    isFollowing ? Colors.grey[600] : Colors.orangeAccent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                textStyle: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 14),
               ),
               child: Text(isFollowing ? "Following" : "Follow"),
             ),
@@ -63,13 +86,34 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
           final data = snapshot.data!.data()! as Map<String, dynamic>;
 
-          // Format tarikh kemaskini
-          final tarikhKemaskini =
-              "${DateTime.parse(data["tarikhKemaskini"]).day}-${DateTime.parse(data["tarikhKemaskini"]).month}-${DateTime.parse(data["tarikhKemaskini"]).year}";
+          // update _currentImageUrl once when data arrives
+          final imageFromDoc = (data["imageUrl"] ?? "") as String;
+          if (_currentImageUrl != imageFromDoc) {
+            // schedule setState after build to avoid changing state during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _currentImageUrl = imageFromDoc;
+                });
+              }
+            });
+          }
+
+          // Format tarikh kemaskini (guard in case field missing)
+          String tarikhKemaskini = "-";
+          if (data["tarikhKemaskini"] != null && (data["tarikhKemaskini"] as String).isNotEmpty) {
+            try {
+              final dt = DateTime.parse(data["tarikhKemaskini"]);
+              tarikhKemaskini = "${dt.day}-${dt.month}-${dt.year}";
+            } catch (_) {
+              tarikhKemaskini = data["tarikhKemaskini"].toString();
+            }
+          }
 
           return SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -79,7 +123,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                       color: cardGreen,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
-                        BoxShadow(color: Color(0x33000000), offset: Offset(0, 6), blurRadius: 10),
+                        BoxShadow(
+                            color: Color(0x33000000),
+                            offset: Offset(0, 6),
+                            blurRadius: 10),
                       ],
                     ),
                     child: Padding(
@@ -88,7 +135,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 16),
                             decoration: BoxDecoration(
                               color: deepGreen,
                               borderRadius: BorderRadius.circular(14),
@@ -105,7 +153,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          if (data["imageUrl"] != null)
+                          if (data["imageUrl"] != null && (data["imageUrl"] as String).isNotEmpty)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: AspectRatio(
@@ -131,7 +179,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   // Posts Section
                   const Text(
                     "Posting",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: deepGreen),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: deepGreen),
                   ),
                   const SizedBox(height: 12),
 
@@ -188,7 +239,9 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(2, 2))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(2, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
