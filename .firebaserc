@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "nursurau2"
+  },
+  "targets": {
+    "nursurau2": {
+      "hosting": {
+        "admin": [
+          "nursurau2"
+        ],
+        "user": [
+          "user-nursurau2"
+        ],
+        "paidAdmin": [
+          "paid-nursurau2"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

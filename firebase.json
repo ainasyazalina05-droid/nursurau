@@ -1,1 +1,81 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"nursurau2","appId":"1:779548199598:android:77abe3e1581a32a4dc7b3f","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"nursurau2","configurations":{"android":"1:779548199598:android:77abe3e1581a32a4dc7b3f","ios":"1:779548199598:ios:6387086dba54d07edc7b3f","macos":"1:779548199598:ios:6387086dba54d07edc7b3f","web":"1:779548199598:web:bebcb679324f9305dc7b3f","windows":"1:779548199598:web:d8d42c4436ac3feedc7b3f"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "nursurau2",
+          "appId": "1:779548199598:android:77abe3e1581a32a4dc7b3f",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "nursurau2",
+          "configurations": {
+            "android": "1:779548199598:android:77abe3e1581a32a4dc7b3f",
+            "ios": "1:779548199598:ios:6387086dba54d07edc7b3f",
+            "macos": "1:779548199598:ios:6387086dba54d07edc7b3f",
+            "web": "1:779548199598:web:bebcb679324f9305dc7b3f",
+            "windows": "1:779548199598:web:d8d42c4436ac3feedc7b3f"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-southeast1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": [
+    {
+      "target": "admin",
+      "public": "build/web/admin",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "user",
+      "public": "build/web/user",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "paidAdmin",
+      "public": "build/web/paidAdmin",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

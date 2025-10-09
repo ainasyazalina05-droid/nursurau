@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart' show Firebase;
+// import 'package:nursurau/pages/admin_ajk/login_page.dart';
 import 'package:nursurau/pages/users/home_page.dart' show HomePage;
-
-
 
 import 'firebase_options.dart';
 
 // User pages
 
 // Admin pejabat
-//import 'pages/admin_paid/paid.dart';
+// import 'pages/admin_paid/paid.dart';
 
 // Admin ajk
-//import 'pages/admin_ajk/admin_ajk_login.dart';
-//import 'pages/admin_ajk/admin_ajk_dashboard.dart';
+// import 'pages/admin_ajk/admin_ajk_login.dart';
+// import 'pages/admin_ajk/admin_ajk_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // penting untuk async
@@ -35,21 +34,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
 
-      // 👉 You switch this manually depending on role/page you want to run:
-      //home: const LoginPage(),
-      // 👉 Change this to test different UIs
-      home: const HomePage(),
-      
-      //home: const LoginPage(),
-       //home: const AdminPaidPage(),
-      // 👉 Selected page based on toggle
-      // home: selectedHome,
-
-      // Example of old commented options kept:
-      // home: const HomePage(),
-      // home: const AdminPaidPage(),
-      // home: const AdminAjkLoginPage(),
-      // home: const AdminAjkDashboard(),
+      // 👉 Switch this manually depending on which version you want to open:
+      // home: const LoginPage(),  // Admin
+      home: const HomePage(),      // User
+      // home: const AdminPaidPage(), // Paid Admin
     );
   }
 }
