@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid login")),
+        const SnackBar(content: Text("Log masuk tidak sah")),
       );
     }
   }
@@ -42,11 +42,16 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EFD1), // 🌟 background lembut
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Admin AJK Login"),
-        backgroundColor: Colors.green, // 🌟 hijau tema utama
+        title: const Text(
+          "Portal Pentadbir AJK",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  // warna tulisan putih
+        ),
+        centerTitle: true,
+        backgroundColor: const Color.fromARGB(255, 135, 172, 79), // hijau tema utama
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Center(
@@ -67,16 +72,16 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.account_circle,
-                    size: 80, color: Colors.green), // 🌟 icon besar atas
+                    size: 80, color:   Color.fromARGB(255, 135, 172, 79),), // 🌟 icon besar atas
 
                 const SizedBox(height: 20),
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: "Email",
-                    prefixIcon: const Icon(Icons.email, color: Colors.green),
+                    prefixIcon: const Icon(Icons.email, color:  Color.fromARGB(255, 135, 172, 79),),
                     filled: true,
-                    fillColor: const Color(0xFFF5EFD1),
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -87,10 +92,10 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: "Password",
-                    prefixIcon: const Icon(Icons.lock, color: Colors.green),
+                    labelText: "Kata Laluan",
+                    prefixIcon: const Icon(Icons.lock, color:   Color.fromARGB(255, 135, 172, 79),),
                     filled: true,
-                    fillColor: const Color(0xFFF5EFD1),
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -101,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor:  const Color.fromARGB(255, 135, 172, 79),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -109,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     onPressed: _login,
                     child: const Text(
-                      "Login",
+                      "Daftar Masuk",
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
