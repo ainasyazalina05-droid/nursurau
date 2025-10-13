@@ -1,13 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class SurauDetailsPage extends StatefulWidget {
-  final String surauName;
+  final String ajkId;
+  final String surauId;
 
-  const SurauDetailsPage({super.key, required this.surauName, required String ajkId});
+  const SurauDetailsPage({super.key, required this.ajkId, required this.surauId});
 
   @override
   State<SurauDetailsPage> createState() => _SurauDetailsPageState();
@@ -17,7 +18,31 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   final _firestore = FirebaseFirestore.instance;
   final _picker = ImagePicker();
 
-  // 🔧 Edit field in main surau info (nama, lokasi, kapasiti)
+  String surauName = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSurauName();
+  }
+
+  /// Fetch main surau name from correct nested path
+  Future<void> _fetchSurauName() async {
+    final doc = await _firestore
+        .collection("form")
+        .doc(widget.surauId)
+        .collection("surauDetails")
+        .doc("surauDetails_data")
+        .get();
+
+    if (doc.exists) {
+      setState(() {
+        surauName = doc.data()?['namaSurau'] ?? "";
+      });
+    }
+  }
+
+  /// Edit main field (namaSurau, lokasi, etc)
   Future<void> _editField(String title, String currentValue, String fieldKey) async {
     final controller = TextEditingController(text: currentValue);
 
@@ -36,11 +61,18 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await _firestore.collection("surauDetails").doc("main").update({
+              await _firestore
+                  .collection("form")
+                  .doc(widget.surauId)
+                  .collection("surauDetails")
+                  .doc("surauDetails_data")
+                  .update({
                 fieldKey: controller.text,
                 "tarikhKemaskini": DateTime.now().toIso8601String(),
               });
+
               if (mounted) Navigator.pop(ctx);
+              _fetchSurauName();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(255, 135, 172, 79),
@@ -52,7 +84,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     );
   }
 
-  // 🔧 Add or Edit Sub-Entry
+  /// Add or edit sub entries
   Future<void> _editSubEntry({DocumentSnapshot? doc}) async {
     final data = doc?.data() as Map<String, dynamic>?;
 
@@ -81,8 +113,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.image, color: Colors.white),
-                  label: const Text("Pilih Gambar", style: TextStyle(color: Colors.white)),
+                  icon: const Icon(Icons.image),
+                  label: const Text("Pilih Gambar"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 135, 172, 79),
                   ),
@@ -119,26 +151,22 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   imageUrl = await ref.getDownloadURL();
                 }
 
+                final subEntryRef = _firestore
+                    .collection("form")
+                    .doc(widget.surauId)
+                    .collection("surauDetails")
+                    .doc("surauDetails_data")
+                    .collection("subEntries");
+
                 if (doc == null) {
-                  // Tambah baru
-                  await _firestore
-                      .collection("surauDetails")
-                      .doc("main")
-                      .collection("subEntries")
-                      .add({
+                  await subEntryRef.add({
                     "title": titleController.text,
                     "description": descController.text,
                     "imageUrl": imageUrl,
                     "createdAt": DateTime.now().toIso8601String(),
                   });
                 } else {
-                  // Kemaskini sedia ada
-                  await _firestore
-                      .collection("surauDetails")
-                      .doc("main")
-                      .collection("subEntries")
-                      .doc(doc.id)
-                      .update({
+                  await subEntryRef.doc(doc.id).update({
                     "title": titleController.text,
                     "description": descController.text,
                     "imageUrl": imageUrl,
@@ -146,9 +174,12 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   });
                 }
 
-                await _firestore.collection("surauDetails").doc("main").update({
-                  "tarikhKemaskini": DateTime.now().toIso8601String(),
-                });
+                await _firestore
+                    .collection("form")
+                    .doc(widget.surauId)
+                    .collection("surauDetails")
+                    .doc("surauDetails_data")
+                    .update({"tarikhKemaskini": DateTime.now().toIso8601String()});
 
                 if (mounted) Navigator.pop(ctx);
               },
@@ -159,7 +190,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     );
   }
 
-  // 🧱 Main Info Card
   Widget buildMainCard(String title, String value, String fieldKey) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -182,7 +212,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     );
   }
 
-  // 🧱 Sub Info Card
   Widget buildSubCard(DocumentSnapshot doc) {
     final subData = doc.data()! as Map<String, dynamic>;
     return Container(
@@ -201,8 +230,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (subData["description"] != null)
-              Text(subData["description"]),
+            if (subData["description"] != null) Text(subData["description"]),
             if (subData["imageUrl"] != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
@@ -222,15 +250,13 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          "Butiran Surau: ${widget.surauName}",
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.normal),
-        ),
-        centerTitle: true,
-      ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection("surauDetails").doc("main").snapshots(),
+        stream: _firestore
+            .collection("form")
+            .doc(widget.surauId)
+            .collection("surauDetails")
+            .doc("surauDetails_data")
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(child: Text("Belum ada maklumat, sila tambah."));
@@ -247,19 +273,18 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
               if (data["imageUrl"] != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child:
-                      Image.network(data["imageUrl"], height: 200, fit: BoxFit.cover),
+                  child: Image.network(data["imageUrl"], height: 200, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 12),
-
               buildMainCard("Nama Surau", data["namaSurau"] ?? "-", "namaSurau"),
               buildMainCard("Lokasi", data["lokasi"] ?? "-", "lokasi"),
               buildMainCard("Kapasiti", data["kapasiti"] ?? "-", "kapasiti"),
-
               StreamBuilder<QuerySnapshot>(
                 stream: _firestore
+                    .collection("form")
+                    .doc(widget.surauId)
                     .collection("surauDetails")
-                    .doc("main")
+                    .doc("surauDetails_data")
                     .collection("subEntries")
                     .orderBy("createdAt", descending: true)
                     .snapshots(),
@@ -273,7 +298,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   );
                 },
               ),
-
               const SizedBox(height: 10),
               Text("Tarikh Kemaskini: $tarikhKemaskini"),
             ],
@@ -286,13 +310,11 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color.fromARGB(255, 135, 172, 79),
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () => _editSubEntry(),
           icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text("Tambah Butiran Baru",
-              style: TextStyle(color: Colors.white)),
+          label: const Text("Tambah Butiran Baru", style: TextStyle(color: Colors.white)),
         ),
       ),
     );

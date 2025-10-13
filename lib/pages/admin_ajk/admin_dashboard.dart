@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'donation_page.dart';
 import 'surau_details_page.dart';
-import 'posting_page.dart'; // 👈 new page import
+import 'posting_page.dart';
 
 class AdminDashboard extends StatefulWidget {
-  final String ajkId; // pass AJK ID from login
+  final String ajkId;
+  final String surauId;
 
-  const AdminDashboard({super.key, required this.ajkId});
+  const AdminDashboard({super.key, required this.ajkId, required this.surauId});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -15,25 +17,52 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
+  String surauName = ""; // For dynamic AppBar title
   late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
+
     _pages = [
-      DonationAdminPage(ajkId: widget.ajkId), // ✅ pass ajkId correctly
-      PostingPage(), // ✅ posting page in the middle
-      SurauDetailsPage(ajkId: widget.ajkId, surauName: '',), // ✅ pass ajkId to surau details
+      DonationAdminPage(
+        ajkId: widget.ajkId,
+        surauId: widget.surauId,
+      ),
+      PostingPage(
+        ajkId: widget.ajkId,
+        surauId: widget.surauId, // ✅ Pass surauId here
+      ),
+      SurauDetailsPage(
+        ajkId: widget.ajkId,
+        surauId: widget.surauId,
+      ),
     ];
+
+    _fetchSurauName();
+  }
+
+  Future<void> _fetchSurauName() async {
+    final doc = await FirebaseFirestore.instance
+        .collection("surauDetails")
+        .doc(widget.surauId)
+        .get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+      setState(() {
+        surauName = data["namaSurau"] ?? "";
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Portal Pentadbir AJK",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          _currentIndex == 2 ? "Butiran Surau: $surauName" : "Portal Pentadbir AJK",
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -49,7 +78,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         centerTitle: true,
         backgroundColor: const Color.fromARGB(255, 135, 172, 79),
       ),
-      body: _pages[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: const Color.fromARGB(255, 135, 172, 79),
@@ -61,7 +93,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             label: "Derma",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.post_add), // 👈 post icon
+            icon: Icon(Icons.post_add),
             label: "Posting",
           ),
           BottomNavigationBarItem(

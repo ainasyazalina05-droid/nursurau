@@ -6,8 +6,13 @@ import 'package:image_picker/image_picker.dart';
 
 class DonationAdminPage extends StatefulWidget {
   final String ajkId;
+  final String surauId; // ✅ Surau ID passed from AdminDashboard
 
-  const DonationAdminPage({super.key, required this.ajkId});
+  const DonationAdminPage({
+    super.key,
+    required this.ajkId,
+    required this.surauId,
+  });
 
   @override
   State<DonationAdminPage> createState() => _DonationAdminPageState();
@@ -35,7 +40,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
         title: Text(docId == null ? "Tambah Derma" : "Kemaskini Derma"),
         content: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
@@ -43,8 +47,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
               ),
               TextField(
                 controller: amountController,
-                decoration:
-                    const InputDecoration(labelText: "Jumlah Sasaran (RM)"),
+                decoration: const InputDecoration(labelText: "Jumlah Sasaran (RM)"),
                 keyboardType: TextInputType.number,
               ),
               TextField(
@@ -63,11 +66,8 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
               const SizedBox(height: 10),
               ElevatedButton.icon(
                 icon: const Icon(Icons.qr_code, color: Colors.white),
-                label:
-                    const Text("Pilih QR", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                ),
+                label: const Text("Pilih QR", style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () async {
                   final picked = await _picker.pickImage(source: ImageSource.gallery);
                   if (picked != null && mounted) {
@@ -96,7 +96,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () async {
               try {
-                // ✅ Validate required fields
                 if (titleController.text.trim().isEmpty ||
                     amountController.text.trim().isEmpty ||
                     descriptionController.text.trim().isEmpty ||
@@ -111,7 +110,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   return;
                 }
 
-                // ✅ Validate numeric value for amount
                 if (double.tryParse(amountController.text.trim()) == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -122,7 +120,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   return;
                 }
 
-                // ✅ Upload QR code (only if selected)
                 if (qrFile != null) {
                   final ref = FirebaseStorage.instance.ref(
                     "donation_qr/${DateTime.now().millisecondsSinceEpoch}.png",
@@ -131,28 +128,26 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   qrUrl = await ref.getDownloadURL();
                 }
 
-                // ✅ Prepare data
                 final donationData = {
                   "title": titleController.text.trim(),
                   "amount": amountController.text.trim(),
                   "description": descriptionController.text.trim(),
                   "account": accountController.text.trim(),
                   "contact": contactController.text.trim(),
-                  "qrUrl": qrUrl,
+                  "qrUrl": qrUrl ?? "",
                   "ajkId": widget.ajkId,
+                  "createdAt": FieldValue.serverTimestamp(),
                 };
 
-                // ✅ Save or update Firestore
+                final donationRef = _firestore
+                    .collection("form")
+                    .doc(widget.surauId)
+                    .collection("donations");
+
                 if (docId != null) {
-                  await _firestore.collection("donations").doc(docId).update({
-                    ...donationData,
-                    "updatedAt": DateTime.now().toIso8601String(),
-                  });
+                  await donationRef.doc(docId).update(donationData);
                 } else {
-                  await _firestore.collection("donations").add({
-                    ...donationData,
-                    "createdAt": DateTime.now().toIso8601String(),
-                  });
+                  await donationRef.add(donationData);
                 }
 
                 if (mounted) {
@@ -182,14 +177,8 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
   Widget buildDonationCard(DocumentSnapshot docSnapshot) {
     final data = docSnapshot.data() as Map<String, dynamic>;
-    final createdAtStr = data["createdAt"];
-    DateTime createdAt;
-
-    try {
-      createdAt = createdAtStr != null ? DateTime.parse(createdAtStr) : DateTime.now();
-    } catch (_) {
-      createdAt = DateTime.now();
-    }
+    final Timestamp? createdAtTs = data["createdAt"];
+    final createdAt = createdAtTs != null ? createdAtTs.toDate() : DateTime.now();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -204,7 +193,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -251,28 +239,30 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
   @override
   Widget build(BuildContext context) {
+    final donationRef = _firestore
+        .collection("form")
+        .doc(widget.surauId)
+        .collection("donations")
+        .orderBy("createdAt", descending: true);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          "Senarai Derma",
-          style: TextStyle(
-              color: Colors.black, fontWeight: FontWeight.normal, fontSize: 18),
-        ),
+        title: const Text("Senarai Derma", style: TextStyle(color: Colors.black)),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
-            .collection("donations")
-            .where("ajkId", isEqualTo: widget.ajkId)
-            .orderBy("createdAt", descending: true)
-            .snapshots(),
+        stream: donationRef.snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
             return const Center(child: Text("Belum ada maklumat, sila tambah."));
           }
-
-          final docs = snapshot.data!.docs;
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,
