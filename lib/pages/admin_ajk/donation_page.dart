@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DonationAdminPage extends StatefulWidget {
-  final String ajkId; // <-- AJK ID
+  final String ajkId;
 
   const DonationAdminPage({super.key, required this.ajkId});
 
@@ -23,8 +23,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
     final titleController = TextEditingController(text: data?['title']);
     final amountController = TextEditingController(text: data?['amount']);
-    final descriptionController =
-        TextEditingController(text: data?['description']);
+    final descriptionController = TextEditingController(text: data?['description']);
     final accountController = TextEditingController(text: data?['account']);
     final contactController = TextEditingController(text: data?['contact']);
     File? qrFile;
@@ -39,7 +38,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-<<<<<<< HEAD
                   controller: titleController,
                   decoration: const InputDecoration(labelText: "Judul Derma")),
               TextField(
@@ -56,40 +54,13 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
               TextField(
                   controller: contactController,
                   decoration: const InputDecoration(labelText: "No Telefon AJK")),
-=======
-                controller: titleController,
-                decoration: const InputDecoration(labelText: "Judul Derma"),
-              ),
-              TextField(
-                controller: amountController,
-                decoration:
-                    const InputDecoration(labelText: "Jumlah Sasaran (RM)"),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: "Keterangan"),
-                maxLines: 3,
-              ),
-              TextField(
-                controller: accountController,
-                decoration: const InputDecoration(labelText: "No Akaun"),
-              ),
-              TextField(
-                controller: contactController,
-                decoration: const InputDecoration(labelText: "No Telefon AJK"),
-              ),
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
               const SizedBox(height: 10),
               ElevatedButton.icon(
                 icon: const Icon(Icons.qr_code, color: Colors.white),
                 label: const Text("Pilih QR", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () async {
-                  final picked =
-                      await _picker.pickImage(source: ImageSource.gallery);
+                  final picked = await _picker.pickImage(source: ImageSource.gallery);
                   if (picked != null && mounted) {
                     setState(() => qrFile = File(picked.path));
                   }
@@ -115,64 +86,8 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () async {
-<<<<<<< HEAD
-              // Upload QR if new file selected
-              if (qrFile != null) {
-                final ref = FirebaseStorage.instance
-                    .ref("donation_qr/${DateTime.now().millisecondsSinceEpoch}.png");
-                await ref.putFile(qrFile!);
-                qrUrl = await ref.getDownloadURL();
-              }
-
-              final donationData = {
-                "title": titleController.text.trim(),
-                "amount": amountController.text.trim(),
-                "description": descriptionController.text.trim(),
-                "account": accountController.text.trim(),
-                "contact": contactController.text.trim(),
-                "qrUrl": qrUrl,
-                "ajkId": widget.ajkId, // <-- store AJK ID
-                "updatedAt": DateTime.now().toIso8601String(),
-              };
-
-              if (docId != null) {
-                // Update existing donation
-                await _firestore.collection("donations").doc(docId).set(donationData, SetOptions(merge: true));
-              } else {
-                // Create new donation
-                donationData["createdAt"] = DateTime.now().toIso8601String();
-                await _firestore.collection("donations").add(donationData);
-              }
-=======
               try {
-                // ✅ Validate required fields
-                if (titleController.text.trim().isEmpty ||
-                    amountController.text.trim().isEmpty ||
-                    descriptionController.text.trim().isEmpty ||
-                    accountController.text.trim().isEmpty ||
-                    contactController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Sila isi semua ruangan wajib."),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
-
-                // ✅ Validate numeric value for amount
-                if (double.tryParse(amountController.text.trim()) == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Jumlah sasaran mesti dalam nombor."),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
-
-                // ✅ Upload QR code (only if selected)
+                // ✅ Upload QR code if new file selected
                 if (qrFile != null) {
                   final ref = FirebaseStorage.instance.ref(
                     "donation_qr/${DateTime.now().millisecondsSinceEpoch}.png",
@@ -181,7 +96,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   qrUrl = await ref.getDownloadURL();
                 }
 
-                // ✅ Save or update data
+                // ✅ Prepare data
                 final donationData = {
                   "title": titleController.text.trim(),
                   "amount": amountController.text.trim(),
@@ -189,8 +104,10 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   "account": accountController.text.trim(),
                   "contact": contactController.text.trim(),
                   "qrUrl": qrUrl,
+                  "ajkId": widget.ajkId,
                 };
 
+                // ✅ Save or update Firestore
                 if (docId != null) {
                   await _firestore.collection("donations").doc(docId).update({
                     ...donationData,
@@ -213,7 +130,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   );
                 }
               } catch (e) {
-                // ✅ Catch unexpected errors
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("Ralat: ${e.toString()}"),
@@ -224,7 +140,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             },
             child: const Text("Simpan", style: TextStyle(color: Colors.white)),
           ),
-
         ],
       ),
     );
@@ -232,17 +147,22 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
   Widget buildDonationCard(DocumentSnapshot docSnapshot) {
     final data = docSnapshot.data() as Map<String, dynamic>;
+    final createdAtStr = data["createdAt"];
+    DateTime createdAt;
+
+    try {
+      createdAt = createdAtStr != null ? DateTime.parse(createdAtStr) : DateTime.now();
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-            color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
+        border: Border.all(color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2)),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -256,31 +176,17 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                 Expanded(
                   child: Text(
                     data["title"] ?? "",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () => _editDonation(docSnapshot),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
-                  child: const Text(
-                    "Kemaskini",
-                    style: TextStyle(fontSize: 14, color: Colors.white),
-                  ),
-<<<<<<< HEAD
-                  child: const Text("Kemaskini",
-                      style: TextStyle(fontSize: 14, color: Colors.white)),
-=======
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
+                  child: const Text("Kemaskini", style: TextStyle(fontSize: 14, color: Colors.white)),
                 ),
               ],
             ),
@@ -288,11 +194,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             if (data["qrUrl"] != null && data["qrUrl"].toString().isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  data["qrUrl"],
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.network(data["qrUrl"], height: 150, fit: BoxFit.cover),
               ),
             const SizedBox(height: 8),
             Text("Jumlah Sasaran: RM ${data["amount"] ?? ""}"),
@@ -300,9 +202,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             Text("No Akaun: ${data["account"] ?? ""}"),
             Text("No Telefon AJK: ${data["contact"] ?? ""}"),
             Text(
-              "Tarikh Cipta: ${DateTime.parse(data["createdAt"] ?? DateTime.now().toIso8601String()).day}-"
-              "${DateTime.parse(data["createdAt"] ?? DateTime.now().toIso8601String()).month}-"
-              "${DateTime.parse(data["createdAt"] ?? DateTime.now().toIso8601String()).year}",
+              "Tarikh Cipta: ${createdAt.day}-${createdAt.month}-${createdAt.year}",
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -314,42 +214,23 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
       appBar: AppBar(title: const Text("Senarai Derma"), backgroundColor: Colors.green),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection("donations")
-            .where("ajkId", isEqualTo: widget.ajkId) // <-- filter by current AJK
-=======
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "Senarai Derma",
-          style: TextStyle(
-              color: Colors.black, fontWeight: FontWeight.normal, fontSize: 18),
-        ),
-        centerTitle: true,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
-            .collection("donations")
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
+            .where("ajkId", isEqualTo: widget.ajkId)
             .orderBy("createdAt", descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text("Belum ada maklumat, sila tambah."),
-            );
+            return const Center(child: Text("Belum ada maklumat, sila tambah."));
           }
 
           final docs = snapshot.data!.docs;
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,
-            itemBuilder: (ctx, index) {
-              return buildDonationCard(docs[index]);
-            },
+            itemBuilder: (ctx, index) => buildDonationCard(docs[index]),
           );
         },
       ),
@@ -359,16 +240,11 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color.fromARGB(255, 135, 172, 79),
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () => _editDonation(null),
           icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            "Tambah Derma",
-            style: TextStyle(color: Colors.white),
-          ),
+          label: const Text("Tambah Derma", style: TextStyle(color: Colors.white)),
         ),
       ),
     );
