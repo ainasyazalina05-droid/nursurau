@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'follow_service.dart'; // import the service
 
 class SurauDetailsPage extends StatefulWidget {
@@ -14,7 +13,7 @@ class SurauDetailsPage extends StatefulWidget {
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
   final _firestore = FirebaseFirestore.instance;
   bool isFollowing = false;
-  String _currentImageUrl = ""; // will be updated when data loads
+  String _currentImageUrl = "";
 
   @override
   void initState() {
@@ -30,7 +29,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   }
 
   Future<void> _toggleFollow() async {
-    // toggle using the FollowService - uses name + current image
     await FollowService.toggleFollowByName(widget.surauName, _currentImageUrl);
     final followed = await FollowService.isFollowedByName(widget.surauName);
     setState(() {
@@ -40,7 +38,9 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isFollowing ? "You followed this surau!" : "You unfollowed this surau!",
+          isFollowing
+              ? "You followed this surau!"
+              : "You unfollowed this surau!",
         ),
       ),
     );
@@ -78,18 +78,21 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection("surauDetails").doc("main").snapshots(),
+        stream: _firestore
+            .collection("surauDetails")
+            .doc(widget.surauName) // ✅ dynamic surau document
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("Belum ada maklumat, sila tambah."));
+            return const Center(
+                child: Text("Belum ada maklumat, sila tambah."));
           }
 
           final data = snapshot.data!.data()! as Map<String, dynamic>;
 
-          // update _currentImageUrl once when data arrives
+          // update image url
           final imageFromDoc = (data["imageUrl"] ?? "") as String;
           if (_currentImageUrl != imageFromDoc) {
-            // schedule setState after build to avoid changing state during build
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 setState(() {
@@ -99,9 +102,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
             });
           }
 
-          // Format tarikh kemaskini (guard in case field missing)
+          // format date
           String tarikhKemaskini = "-";
-          if (data["tarikhKemaskini"] != null && (data["tarikhKemaskini"] as String).isNotEmpty) {
+          if (data["tarikhKemaskini"] != null &&
+              (data["tarikhKemaskini"] as String).isNotEmpty) {
             try {
               final dt = DateTime.parse(data["tarikhKemaskini"]);
               tarikhKemaskini = "${dt.day}-${dt.month}-${dt.year}";
@@ -153,7 +157,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          if (data["imageUrl"] != null && (data["imageUrl"] as String).isNotEmpty)
+                          if (data["imageUrl"] != null &&
+                              (data["imageUrl"] as String).isNotEmpty)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: AspectRatio(
@@ -165,18 +170,22 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                               ),
                             ),
                           const SizedBox(height: 18),
-                          _InfoRow(label: 'ALAMAT', value: data["lokasi"] ?? "-"),
+                          _InfoRow(
+                              label: 'ALAMAT',
+                              value: data["lokasi"] ?? "-"),
                           const SizedBox(height: 10),
-                          _InfoRow(label: 'NO TELEFON', value: data["noTelefon"] ?? "-"),
+                          _InfoRow(
+                              label: 'NO TELEFON',
+                              value: data["noTelefon"] ?? "-"),
                           const SizedBox(height: 10),
-                          _InfoRow(label: 'NADZIR', value: data["nadzir"] ?? "-"),
+                          _InfoRow(
+                              label: 'NADZIR', value: data["nadzir"] ?? "-"),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
 
-                  // Posts Section
+                  const SizedBox(height: 24),
                   const Text(
                     "Posting",
                     style: TextStyle(
@@ -186,15 +195,17 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   ),
                   const SizedBox(height: 12),
 
+                  // ✅ dynamic subcollection for each surau
                   StreamBuilder<QuerySnapshot>(
                     stream: _firestore
                         .collection("surauDetails")
-                        .doc("main")
+                        .doc(widget.surauName)
                         .collection("subEntries")
                         .orderBy("createdAt", descending: true)
                         .snapshots(),
                     builder: (context, postSnapshot) {
-                      if (!postSnapshot.hasData || postSnapshot.data!.docs.isEmpty) {
+                      if (!postSnapshot.hasData ||
+                          postSnapshot.data!.docs.isEmpty) {
                         return const Text("Tiada posting untuk ditunjukkan.");
                       }
 
@@ -204,7 +215,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
-                          final post = docs[index].data()! as Map<String, dynamic>;
+                          final post =
+                              docs[index].data()! as Map<String, dynamic>;
                           return _buildPost(
                             title: post["title"] ?? "",
                             image: post["imageUrl"] ?? "",
@@ -218,7 +230,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   const SizedBox(height: 10),
                   Text(
                     "Tarikh Kemaskini: $tarikhKemaskini",
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -240,19 +253,35 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(2, 2))
+          BoxShadow(
+              color: Colors.black26, blurRadius: 6, offset: Offset(2, 2))
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(padding: const EdgeInsets.all(12), child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              title,
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
           if (image.isNotEmpty)
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(8)),
               child: Image.network(image, fit: BoxFit.cover),
             ),
-          Padding(padding: const EdgeInsets.all(12), child: Text(description, style: const TextStyle(fontSize: 14, color: Colors.black87))),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              description,
+              style:
+                  const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+          ),
         ],
       ),
     );
@@ -269,8 +298,26 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(flex: 4, child: Text('$label :', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, height: 1.4))),
-        Expanded(flex: 7, child: Text(value, style: const TextStyle(color: Colors.white, height: 1.4, fontWeight: FontWeight.w500))),
+        Expanded(
+          flex: 4,
+          child: Text(
+            '$label :',
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                height: 1.4),
+          ),
+        ),
+        Expanded(
+          flex: 7,
+          child: Text(
+            value,
+            style: const TextStyle(
+                color: Colors.white,
+                height: 1.4,
+                fontWeight: FontWeight.w500),
+          ),
+        ),
       ],
     );
   }

@@ -4,7 +4,9 @@ import 'donation_page.dart';
 import 'surau_details_page.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final String ajkId; // pass AJK ID from login
+
+  const AdminDashboard({super.key, required this.ajkId});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -12,11 +14,16 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  final List<Widget> _pages = [
-    const DonationAdminPage(),
-    const SurauDetailsPage(surauName: '',),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const DonationAdminPage(ajkId: '',),
+      SurauDetailsPage(ajkId: widget.ajkId), // pass ajkId
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
