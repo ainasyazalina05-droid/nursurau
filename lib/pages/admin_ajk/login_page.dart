@@ -26,6 +26,7 @@ class _LoginPageState extends State<LoginPage> {
           .where('password', isEqualTo: password)
           .get();
 
+<<<<<<< HEAD
       if (query.docs.isNotEmpty) {
         // Get the AJK ID from the first matching document
         final ajkId = query.docs.first.id;
@@ -49,17 +50,42 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text("Error: $e")),
         );
       }
+=======
+    if (query.docs.isNotEmpty) {
+      Navigator.pushReplacement(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(builder: (context) => const AdminDashboard()),
+      );
+    } else {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Log masuk tidak sah")),
+      );
+>>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       backgroundColor: const Color(0xFFF5EFD1),
       appBar: AppBar(
         title: const Text("Admin AJK Login"),
         backgroundColor: Colors.green,
+=======
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          "Portal Pentadbir AJK",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  // warna tulisan putih
+        ),
+        centerTitle: true,
+        backgroundColor: const Color.fromARGB(255, 135, 172, 79), // hijau tema utama
+>>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Center(
@@ -80,15 +106,20 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.account_circle,
+<<<<<<< HEAD
                     size: 80, color: Colors.green),
+=======
+                    size: 80, color:   Color.fromARGB(255, 135, 172, 79),), // 🌟 icon besar atas
+
+>>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
                 const SizedBox(height: 20),
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: "Email",
-                    prefixIcon: const Icon(Icons.email, color: Colors.green),
+                    prefixIcon: const Icon(Icons.email, color:  Color.fromARGB(255, 135, 172, 79),),
                     filled: true,
-                    fillColor: const Color(0xFFF5EFD1),
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -99,10 +130,10 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: "Password",
-                    prefixIcon: const Icon(Icons.lock, color: Colors.green),
+                    labelText: "Kata Laluan",
+                    prefixIcon: const Icon(Icons.lock, color:   Color.fromARGB(255, 135, 172, 79),),
                     filled: true,
-                    fillColor: const Color(0xFFF5EFD1),
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -113,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor:  const Color.fromARGB(255, 135, 172, 79),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -121,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     onPressed: _login,
                     child: const Text(
-                      "Login",
+                      "Daftar Masuk",
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
