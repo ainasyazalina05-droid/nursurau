@@ -39,24 +39,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-<<<<<<< HEAD
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: "Judul Derma")),
-              TextField(
-                  controller: amountController,
-                  decoration: const InputDecoration(labelText: "Jumlah Sasaran (RM)"),
-                  keyboardType: TextInputType.number),
-              TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(labelText: "Keterangan"),
-                  maxLines: 3),
-              TextField(
-                  controller: accountController,
-                  decoration: const InputDecoration(labelText: "No Akaun")),
-              TextField(
-                  controller: contactController,
-                  decoration: const InputDecoration(labelText: "No Telefon AJK")),
-=======
                 controller: titleController,
                 decoration: const InputDecoration(labelText: "Judul Derma"),
               ),
@@ -79,11 +61,11 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                 controller: contactController,
                 decoration: const InputDecoration(labelText: "No Telefon AJK"),
               ),
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
               const SizedBox(height: 10),
               ElevatedButton.icon(
                 icon: const Icon(Icons.qr_code, color: Colors.white),
-                label: const Text("Pilih QR", style: TextStyle(color: Colors.white)),
+                label:
+                    const Text("Pilih QR", style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                 ),
@@ -115,35 +97,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () async {
-<<<<<<< HEAD
-              // Upload QR if new file selected
-              if (qrFile != null) {
-                final ref = FirebaseStorage.instance
-                    .ref("donation_qr/${DateTime.now().millisecondsSinceEpoch}.png");
-                await ref.putFile(qrFile!);
-                qrUrl = await ref.getDownloadURL();
-              }
-
-              final donationData = {
-                "title": titleController.text.trim(),
-                "amount": amountController.text.trim(),
-                "description": descriptionController.text.trim(),
-                "account": accountController.text.trim(),
-                "contact": contactController.text.trim(),
-                "qrUrl": qrUrl,
-                "ajkId": widget.ajkId, // <-- store AJK ID
-                "updatedAt": DateTime.now().toIso8601String(),
-              };
-
-              if (docId != null) {
-                // Update existing donation
-                await _firestore.collection("donations").doc(docId).set(donationData, SetOptions(merge: true));
-              } else {
-                // Create new donation
-                donationData["createdAt"] = DateTime.now().toIso8601String();
-                await _firestore.collection("donations").add(donationData);
-              }
-=======
               try {
                 // ✅ Validate required fields
                 if (titleController.text.trim().isEmpty ||
@@ -170,7 +123,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   );
                   return;
                 }
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
 
                 // ✅ Upload QR code (only if selected)
                 if (qrFile != null) {
@@ -189,6 +141,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   "account": accountController.text.trim(),
                   "contact": contactController.text.trim(),
                   "qrUrl": qrUrl,
+                  "ajkId": widget.ajkId,
                 };
 
                 if (docId != null) {
@@ -213,7 +166,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   );
                 }
               } catch (e) {
-                // ✅ Catch unexpected errors
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("Ralat: ${e.toString()}"),
@@ -224,7 +176,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             },
             child: const Text("Simpan", style: TextStyle(color: Colors.white)),
           ),
-
         ],
       ),
     );
@@ -276,11 +227,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                     "Kemaskini",
                     style: TextStyle(fontSize: 14, color: Colors.white),
                   ),
-<<<<<<< HEAD
-                  child: const Text("Kemaskini",
-                      style: TextStyle(fontSize: 14, color: Colors.white)),
-=======
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
                 ),
               ],
             ),
@@ -314,13 +260,6 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      appBar: AppBar(title: const Text("Senarai Derma"), backgroundColor: Colors.green),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
-            .collection("donations")
-            .where("ajkId", isEqualTo: widget.ajkId) // <-- filter by current AJK
-=======
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
@@ -333,7 +272,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection("donations")
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
+            .where("ajkId", isEqualTo: widget.ajkId)
             .orderBy("createdAt", descending: true)
             .snapshots(),
         builder: (context, snapshot) {

@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
-class SurauDetailsPage extends StatelessWidget {
-  final String ajkId; // unique AJK ID
+class SurauDetailsPage extends StatefulWidget {
+  final String surauName;
 
-  const SurauDetailsPage({super.key, required this.ajkId});
+  const SurauDetailsPage({super.key, required this.surauName, required String ajkId});
 
   @override
-  Widget build(BuildContext context) {
-    final surauQuery = FirebaseFirestore.instance
-        .collection('suraus')
-        .where('ajkId', isEqualTo: ajkId)
-        .limit(1)
-        .snapshots();
+  State<SurauDetailsPage> createState() => _SurauDetailsPageState();
+}
 
-<<<<<<< HEAD
-    return Scaffold(
-      backgroundColor: const Color(0xFFEFE5D8),
-      appBar: AppBar(
-        title: const Text('Butiran Surau'),
-        backgroundColor: Colors.green,
-=======
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
   final _firestore = FirebaseFirestore.instance;
   final _picker = ImagePicker();
@@ -56,39 +48,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
             child: const Text("Simpan", style: TextStyle(color: Colors.white)),
           ),
         ],
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.edit),
-        onPressed: () async {
-          // Navigate to the form page
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SurauFormPage(ajkId: ajkId),
-            ),
-          );
-        },
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: surauQuery,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+    );
+  }
 
-<<<<<<< HEAD
-          if (snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Maklumat surau belum dimasukkan.'));
-          }
-
-          final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-          final tarikhKemaskini = data['tarikhKemaskini'] != null
-              ? "${DateTime.parse(data['tarikhKemaskini']).day}-${DateTime.parse(data['tarikhKemaskini']).month}-${DateTime.parse(data['tarikhKemaskini']).year}"
-              : '-';
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-=======
   // 🔧 Add or Edit Sub-Entry
   Future<void> _editSubEntry({DocumentSnapshot? doc}) async {
     final data = doc?.data() as Map<String, dynamic>?;
@@ -104,32 +67,19 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         builder: (ctx, setStateDialog) => AlertDialog(
           title: Text(doc == null ? "Tambah Maklumat Baru" : "Kemaskini Maklumat"),
           content: SingleChildScrollView(
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (data['imageUrl'] != null && data['imageUrl'] != '')
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(data['imageUrl'], height: 200, fit: BoxFit.cover),
-                  ),
-                const SizedBox(height: 12),
-                Text(
-                  data['namaSurau'] ?? '-',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: "Tajuk"),
                 ),
-                const SizedBox(height: 6),
-                Text("Lokasi: ${data['lokasi'] ?? '-'}"),
-                Text("Kapasiti: ${data['kapasiti'] ?? '-'}"),
                 const SizedBox(height: 10),
-<<<<<<< HEAD
-                Text("Tarikh Kemaskini: $tarikhKemaskini",
-                    style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          );
-        },
-=======
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: "Deskripsi"),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 10),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.image, color: Colors.white),
                   label: const Text("Pilih Gambar", style: TextStyle(color: Colors.white)),
@@ -205,75 +155,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
             ),
           ],
         ),
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
       ),
     );
   }
-}
 
-<<<<<<< HEAD
-// ---------------- Surau Form Page ----------------
-
-class SurauFormPage extends StatefulWidget {
-  final String ajkId;
-
-  const SurauFormPage({super.key, required this.ajkId});
-
-  @override
-  State<SurauFormPage> createState() => _SurauFormPageState();
-}
-
-class _SurauFormPageState extends State<SurauFormPage> {
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _lokasiController = TextEditingController();
-  final TextEditingController _kapasitiController = TextEditingController();
-  final TextEditingController _imageController = TextEditingController();
-
-  final CollectionReference surauCollection =
-      FirebaseFirestore.instance.collection('suraus');
-
-  @override
-  void initState() {
-    super.initState();
-    // Load existing data if exists
-    surauCollection.where('ajkId', isEqualTo: widget.ajkId).limit(1).get().then((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        final data = snapshot.docs.first.data() as Map<String, dynamic>;
-        _namaController.text = data['namaSurau'] ?? '';
-        _lokasiController.text = data['lokasi'] ?? '';
-        _kapasitiController.text = (data['kapasiti'] ?? '').toString();
-        _imageController.text = data['imageUrl'] ?? '';
-      }
-    });
-  }
-
-  void _saveSurau() async {
-    if (_formKey.currentState!.validate()) {
-      final data = {
-        'ajkId': widget.ajkId,
-        'namaSurau': _namaController.text.trim(),
-        'lokasi': _lokasiController.text.trim(),
-        'kapasiti': int.tryParse(_kapasitiController.text.trim()) ?? 0,
-        'imageUrl': _imageController.text.trim(),
-        'tarikhKemaskini': DateTime.now().toIso8601String(),
-      };
-
-      final query = await surauCollection.where('ajkId', isEqualTo: widget.ajkId).limit(1).get();
-
-      if (query.docs.isEmpty) {
-        // Create new document
-        await surauCollection.add(data);
-      } else {
-        // Update existing document
-        await surauCollection.doc(query.docs.first.id).set(data);
-      }
-
-      if (mounted) {
-        Navigator.pop(context); // Go back to details page
-      }
-    }
-=======
   // 🧱 Main Info Card
   Widget buildMainCard(String title, String value, String fieldKey) {
     return Container(
@@ -295,7 +180,6 @@ class _SurauFormPageState extends State<SurauFormPage> {
         ),
       ),
     );
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
   }
 
   // 🧱 Sub Info Card
@@ -337,49 +221,6 @@ class _SurauFormPageState extends State<SurauFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      appBar: AppBar(
-        title: const Text('Tambah / Kemaskini Surau'),
-        backgroundColor: Colors.green,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _namaController,
-                decoration: const InputDecoration(labelText: 'Nama Surau'),
-                validator: (value) => value!.isEmpty ? 'Sila isi nama surau' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _lokasiController,
-                decoration: const InputDecoration(labelText: 'Lokasi'),
-                validator: (value) => value!.isEmpty ? 'Sila isi lokasi' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _kapasitiController,
-                decoration: const InputDecoration(labelText: 'Kapasiti'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? 'Sila isi kapasiti' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _imageController,
-                decoration: const InputDecoration(labelText: 'Image URL'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                onPressed: _saveSurau,
-                child: const Text('Simpan'),
-              ),
-            ],
-          ),
-=======
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
@@ -452,7 +293,6 @@ class _SurauFormPageState extends State<SurauFormPage> {
           icon: const Icon(Icons.add, color: Colors.white),
           label: const Text("Tambah Butiran Baru",
               style: TextStyle(color: Colors.white)),
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
         ),
       ),
     );

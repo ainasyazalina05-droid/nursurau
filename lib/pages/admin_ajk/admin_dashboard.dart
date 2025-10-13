@@ -17,23 +17,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   late final List<Widget> _pages;
 
-<<<<<<< HEAD
   @override
   void initState() {
     super.initState();
     _pages = [
-      const DonationAdminPage(ajkId: '',),
-      SurauDetailsPage(ajkId: widget.ajkId), // pass ajkId
+      DonationAdminPage(ajkId: widget.ajkId), // ✅ pass ajkId correctly
+      PostingPage(), // ✅ posting page in the middle
+      SurauDetailsPage(ajkId: widget.ajkId, surauName: '',), // ✅ pass ajkId to surau details
     ];
   }
-=======
-  // 👇 Add Posting page in the middle
-  final List<Widget> _pages = [
-    const DonationAdminPage(),
-    const PostingPage(),
-    const SurauDetailsPage(surauName: ''),
-  ];
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
 
   @override
   Widget build(BuildContext context) {

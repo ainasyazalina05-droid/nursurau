@@ -26,66 +26,47 @@ class _LoginPageState extends State<LoginPage> {
           .where('password', isEqualTo: password)
           .get();
 
-<<<<<<< HEAD
       if (query.docs.isNotEmpty) {
-        // Get the AJK ID from the first matching document
+        // ✅ Get the AJK document ID from Firestore
         final ajkId = query.docs.first.id;
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AdminDashboard(ajkId: ajkId),
-          ),
-        );
+        // ✅ Navigate to AdminDashboard with ajkId
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminDashboard(ajkId: ajkId),
+            ),
+          );
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Invalid login")),
+            const SnackBar(content: Text("Log masuk tidak sah")),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(content: Text("Ralat: $e")),
         );
       }
-=======
-    if (query.docs.isNotEmpty) {
-      Navigator.pushReplacement(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(builder: (context) => const AdminDashboard()),
-      );
-    } else {
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Log masuk tidak sah")),
-      );
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      backgroundColor: const Color(0xFFF5EFD1),
-      appBar: AppBar(
-        title: const Text("Admin AJK Login"),
-        backgroundColor: Colors.green,
-=======
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           "Portal Pentadbir AJK",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  // warna tulisan putih
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 135, 172, 79), // hijau tema utama
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
+        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Center(
@@ -105,19 +86,20 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.account_circle,
-<<<<<<< HEAD
-                    size: 80, color: Colors.green),
-=======
-                    size: 80, color:   Color.fromARGB(255, 135, 172, 79),), // 🌟 icon besar atas
-
->>>>>>> 5b04964168c3fb3f63f3bb95b07b16499fe9d350
+                const Icon(
+                  Icons.account_circle,
+                  size: 80,
+                  color: Color.fromARGB(255, 135, 172, 79),
+                ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: "Email",
-                    prefixIcon: const Icon(Icons.email, color:  Color.fromARGB(255, 135, 172, 79),),
+                    prefixIcon: const Icon(
+                      Icons.email,
+                      color: Color.fromARGB(255, 135, 172, 79),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -131,7 +113,10 @@ class _LoginPageState extends State<LoginPage> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: "Kata Laluan",
-                    prefixIcon: const Icon(Icons.lock, color:   Color.fromARGB(255, 135, 172, 79),),
+                    prefixIcon: const Icon(
+                      Icons.lock,
+                      color: Color.fromARGB(255, 135, 172, 79),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -144,7 +129,8 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:  const Color.fromARGB(255, 135, 172, 79),
+                      backgroundColor:
+                          const Color.fromARGB(255, 135, 172, 79),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
