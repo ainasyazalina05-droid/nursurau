@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DonationAdminPage extends StatefulWidget {
-  final String ajkId; // <-- AJK ID
+  final String ajkId;
 
   const DonationAdminPage({super.key, required this.ajkId});
 
@@ -23,8 +23,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
     final titleController = TextEditingController(text: data?['title']);
     final amountController = TextEditingController(text: data?['amount']);
-    final descriptionController =
-        TextEditingController(text: data?['description']);
+    final descriptionController = TextEditingController(text: data?['description']);
     final accountController = TextEditingController(text: data?['account']);
     final contactController = TextEditingController(text: data?['contact']);
     File? qrFile;
@@ -70,8 +69,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   backgroundColor: Colors.green,
                 ),
                 onPressed: () async {
-                  final picked =
-                      await _picker.pickImage(source: ImageSource.gallery);
+                  final picked = await _picker.pickImage(source: ImageSource.gallery);
                   if (picked != null && mounted) {
                     setState(() => qrFile = File(picked.path));
                   }
@@ -133,7 +131,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   qrUrl = await ref.getDownloadURL();
                 }
 
-                // ✅ Save or update data
+                // ✅ Prepare data
                 final donationData = {
                   "title": titleController.text.trim(),
                   "amount": amountController.text.trim(),
@@ -144,6 +142,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                   "ajkId": widget.ajkId,
                 };
 
+                // ✅ Save or update Firestore
                 if (docId != null) {
                   await _firestore.collection("donations").doc(docId).update({
                     ...donationData,
@@ -183,17 +182,22 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
   Widget buildDonationCard(DocumentSnapshot docSnapshot) {
     final data = docSnapshot.data() as Map<String, dynamic>;
+    final createdAtStr = data["createdAt"];
+    DateTime createdAt;
+
+    try {
+      createdAt = createdAtStr != null ? DateTime.parse(createdAtStr) : DateTime.now();
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-            color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
+        border: Border.all(color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2)),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -207,21 +211,15 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
                 Expanded(
                   child: Text(
                     data["title"] ?? "",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () => _editDonation(docSnapshot),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                   child: const Text(
                     "Kemaskini",
@@ -234,11 +232,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             if (data["qrUrl"] != null && data["qrUrl"].toString().isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  data["qrUrl"],
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.network(data["qrUrl"], height: 150, fit: BoxFit.cover),
               ),
             const SizedBox(height: 8),
             Text("Jumlah Sasaran: RM ${data["amount"] ?? ""}"),
@@ -246,9 +240,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             Text("No Akaun: ${data["account"] ?? ""}"),
             Text("No Telefon AJK: ${data["contact"] ?? ""}"),
             Text(
-              "Tarikh Cipta: ${DateTime.parse(data["createdAt"] ?? DateTime.now().toIso8601String()).day}-"
-              "${DateTime.parse(data["createdAt"] ?? DateTime.now().toIso8601String()).month}-"
-              "${DateTime.parse(data["createdAt"] ?? DateTime.now().toIso8601String()).year}",
+              "Tarikh Cipta: ${createdAt.day}-${createdAt.month}-${createdAt.year}",
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -277,18 +269,14 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text("Belum ada maklumat, sila tambah."),
-            );
+            return const Center(child: Text("Belum ada maklumat, sila tambah."));
           }
 
           final docs = snapshot.data!.docs;
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,
-            itemBuilder: (ctx, index) {
-              return buildDonationCard(docs[index]);
-            },
+            itemBuilder: (ctx, index) => buildDonationCard(docs[index]),
           );
         },
       ),
@@ -298,16 +286,11 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color.fromARGB(255, 135, 172, 79),
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () => _editDonation(null),
           icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            "Tambah Derma",
-            style: TextStyle(color: Colors.white),
-          ),
+          label: const Text("Tambah Derma", style: TextStyle(color: Colors.white)),
         ),
       ),
     );
