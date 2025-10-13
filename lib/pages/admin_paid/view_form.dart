@@ -12,7 +12,11 @@ class ViewForm extends StatelessWidget {
         .doc(docId)
         .update({"status": "approved"});
 
-    Navigator.pop(context); // balik ke dashboard
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Form diluluskan.")),
+    );
+
+    Navigator.pop(context);
   }
 
   Future<void> _rejectForm(BuildContext context) async {
@@ -21,7 +25,11 @@ class ViewForm extends StatelessWidget {
         .doc(docId)
         .delete();
 
-    Navigator.pop(context); // balik ke dashboard
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Form ditolak & dipadam.")),
+    );
+
+    Navigator.pop(context);
   }
 
   @override
@@ -36,7 +44,7 @@ class ViewForm extends StatelessWidget {
         }
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return const Scaffold(
-            body: Center(child: Text("Form not found.")),
+            body: Center(child: Text("Form tidak dijumpai.")),
           );
         }
 
@@ -44,57 +52,66 @@ class ViewForm extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text("View Form"),
-            backgroundColor: const Color(0xFFFAF8F0),
+            title: const Text("Maklumat Pendaftaran"),
+            backgroundColor: Colors.green,
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Surau Info",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("Name: ${data['surauName'] ?? '-'}"),
-                Text("Address: ${data['address'] ?? '-'}"),
-                Text("Contact: ${data['contact'] ?? '-'}"),
-                const SizedBox(height: 20),
-                const Text("AJK Info",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("Name: ${data['ajkName'] ?? '-'}"),
-                Text("Email: ${data['email'] ?? '-'}"),
-                Text("Phone: ${data['phone'] ?? '-'}"),
-                Text("IC: ${data['ic'] ?? '-'}"),
-                const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Maklumat Surau",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text("Nama Surau: ${data['surauName'] ?? '-'}"),
+                  Text("Alamat: ${data['address'] ?? '-'}"),
+                  const SizedBox(height: 20),
+                  const Text("Maklumat AJK",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text("Nama AJK: ${data['ajkName'] ?? '-'}"),
+                  Text("Emel: ${data['email'] ?? '-'}"),
+                  Text("Telefon: ${data['phone'] ?? '-'}"),
+                  Text("No. IC: ${data['ic'] ?? '-'}"),
+                  const SizedBox(height: 20),
+                  Text("Status: ${data['status'] ?? 'pending'}",
+                      style: TextStyle(
+                        color: data['status'] == 'approved'
+                            ? Colors.green
+                            : Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      )),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () => _approveForm(context),
+                        child: const Text("Lulus",
+                            style: TextStyle(color: Colors.white)),
                       ),
-                      onPressed: () => _approveForm(context),
-                      child: const Text("Approve",
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () => _rejectForm(context),
+                        child: const Text("Tolak",
+                            style: TextStyle(color: Colors.white)),
                       ),
-                      onPressed: () => _rejectForm(context),
-                      child: const Text("Reject",
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
