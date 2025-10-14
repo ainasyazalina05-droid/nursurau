@@ -5,14 +5,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DonationAdminPage extends StatefulWidget {
-  final String ajkId;
-  final String surauId; // ✅ Surau ID passed from AdminDashboard
+  final String ajkId; // Only need AJK ID now
 
-  const DonationAdminPage({
-    super.key,
-    required this.ajkId,
-    required this.surauId,
-  });
+  const DonationAdminPage({super.key, required this.ajkId, required String surauName});
 
   @override
   State<DonationAdminPage> createState() => _DonationAdminPageState();
@@ -141,7 +136,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
 
                 final donationRef = _firestore
                     .collection("form")
-                    .doc(widget.surauId)
+                    .doc(widget.ajkId) // ✅ Use AJK ID as the document
                     .collection("donations");
 
                 if (docId != null) {
@@ -241,7 +236,7 @@ class _DonationAdminPageState extends State<DonationAdminPage> {
   Widget build(BuildContext context) {
     final donationRef = _firestore
         .collection("form")
-        .doc(widget.surauId)
+        .doc(widget.ajkId)
         .collection("donations")
         .orderBy("createdAt", descending: true);
 

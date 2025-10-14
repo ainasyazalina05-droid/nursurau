@@ -1,320 +1,176 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class SurauDetailsPage extends StatefulWidget {
-  final String ajkId;
-  final String surauId;
+  final String surauName; // e.g. "Al-Amin"
+  final String ajkId; // AJK ID for the admin user
 
-  const SurauDetailsPage({super.key, required this.ajkId, required this.surauId});
+  const SurauDetailsPage({
+    super.key,
+    required this.surauName,
+    required this.ajkId, required String surauId,
+  });
 
   @override
   State<SurauDetailsPage> createState() => _SurauDetailsPageState();
 }
 
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
-  final _firestore = FirebaseFirestore.instance;
-  final _picker = ImagePicker();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ImagePicker _picker = ImagePicker();
 
-  String surauName = "";
+  File? _imageFile;
+  bool _isLoading = false;
+  Map<String, dynamic>? _surauData;
+  String? _documentId;
 
   @override
   void initState() {
     super.initState();
-    _fetchSurauName();
+    _loadSurauData();
   }
 
-  /// Fetch main surau name from correct nested path
-  Future<void> _fetchSurauName() async {
-    final doc = await _firestore
-        .collection("form")
-        .doc(widget.surauId)
-        .collection("surauDetails")
-        .doc("surauDetails_data")
-        .get();
+  Future<void> _loadSurauData() async {
+    setState(() => _isLoading = true);
 
-    if (doc.exists) {
-      setState(() {
-        surauName = doc.data()?['namaSurau'] ?? "";
-      });
+    try {
+      // Search surau in "form" collection using surauName
+      final querySnapshot = await _firestore
+          .collection('form')
+          .where('surauName', isEqualTo: widget.surauName)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        setState(() {
+          _surauData = querySnapshot.docs.first.data();
+          _documentId = querySnapshot.docs.first.id;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Surau ${widget.surauName} not found')),
+        );
+      }
+    } catch (e) {
+      print('Error loading surau data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading data: $e')),
+      );
+    }
+
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() => _imageFile = File(pickedFile.path));
+      await _uploadImage();
     }
   }
 
-  /// Edit main field (namaSurau, lokasi, etc)
-  Future<void> _editField(String title, String currentValue, String fieldKey) async {
-    final controller = TextEditingController(text: currentValue);
+  Future<void> _uploadImage() async {
+    if (_imageFile == null || _documentId == null) return;
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Kemaskini $title"),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: title),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _firestore
-                  .collection("form")
-                  .doc(widget.surauId)
-                  .collection("surauDetails")
-                  .doc("surauDetails_data")
-                  .update({
-                fieldKey: controller.text,
-                "tarikhKemaskini": DateTime.now().toIso8601String(),
-              });
+    setState(() => _isLoading = true);
 
-              if (mounted) Navigator.pop(ctx);
-              _fetchSurauName();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-            ),
-            child: const Text("Simpan", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+    try {
+      final fileName = '${widget.surauName}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('surau_images')
+          .child(fileName);
 
-  /// Add or edit sub entries
-  Future<void> _editSubEntry({DocumentSnapshot? doc}) async {
-    final data = doc?.data() as Map<String, dynamic>?;
+      await ref.putFile(_imageFile!);
+      final imageUrl = await ref.getDownloadURL();
 
-    final titleController = TextEditingController(text: data?['title'] ?? '');
-    final descController = TextEditingController(text: data?['description'] ?? '');
-    File? imageFile;
-    String? existingImageUrl = data?['imageUrl'];
+      // ✅ Update inside the same "form" collection
+      await _firestore.collection('form').doc(_documentId).update({
+        'photoUrl': imageUrl,
+        'updatedBy': widget.ajkId,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateDialog) => AlertDialog(
-          title: Text(doc == null ? "Tambah Maklumat Baru" : "Kemaskini Maklumat"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: "Tajuk"),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: descController,
-                  decoration: const InputDecoration(labelText: "Deskripsi"),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.image),
-                  label: const Text("Pilih Gambar"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-                  ),
-                  onPressed: () async {
-                    final picked = await _picker.pickImage(source: ImageSource.gallery);
-                    if (picked != null) {
-                      setStateDialog(() => imageFile = File(picked.path));
-                    }
-                  },
-                ),
-                if (imageFile != null)
-                  Image.file(imageFile!, height: 120)
-                else if (existingImageUrl != null)
-                  Image.network(existingImageUrl, height: 120),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text("Batal"),
-              onPressed: () => Navigator.pop(ctx),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-              ),
-              child: const Text("Simpan", style: TextStyle(color: Colors.white)),
-              onPressed: () async {
-                String? imageUrl = existingImageUrl;
-                if (imageFile != null) {
-                  final ref = FirebaseStorage.instance
-                      .ref("surau_sub_entries/${DateTime.now().millisecondsSinceEpoch}.jpg");
-                  await ref.putFile(imageFile!);
-                  imageUrl = await ref.getDownloadURL();
-                }
+      setState(() {
+        _surauData?['photoUrl'] = imageUrl;
+      });
 
-                final subEntryRef = _firestore
-                    .collection("form")
-                    .doc(widget.surauId)
-                    .collection("surauDetails")
-                    .doc("surauDetails_data")
-                    .collection("subEntries");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image uploaded successfully')),
+      );
+    } catch (e) {
+      print('Error uploading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image')),
+      );
+    }
 
-                if (doc == null) {
-                  await subEntryRef.add({
-                    "title": titleController.text,
-                    "description": descController.text,
-                    "imageUrl": imageUrl,
-                    "createdAt": DateTime.now().toIso8601String(),
-                  });
-                } else {
-                  await subEntryRef.doc(doc.id).update({
-                    "title": titleController.text,
-                    "description": descController.text,
-                    "imageUrl": imageUrl,
-                    "updatedAt": DateTime.now().toIso8601String(),
-                  });
-                }
-
-                await _firestore
-                    .collection("form")
-                    .doc(widget.surauId)
-                    .collection("surauDetails")
-                    .doc("surauDetails_data")
-                    .update({"tarikhKemaskini": DateTime.now().toIso8601String()});
-
-                if (mounted) Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildMainCard(String title, String value, String fieldKey) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2))
-        ],
-      ),
-      child: ListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(value),
-        trailing: IconButton(
-          icon: const Icon(Icons.edit, color: Color.fromARGB(255, 135, 172, 79)),
-          onPressed: () => _editField(title, value, fieldKey),
-        ),
-      ),
-    );
-  }
-
-  Widget buildSubCard(DocumentSnapshot doc) {
-    final subData = doc.data()! as Map<String, dynamic>;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2))
-        ],
-      ),
-      child: ListTile(
-        title: Text(subData["title"] ?? "",
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (subData["description"] != null) Text(subData["description"]),
-            if (subData["imageUrl"] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Image.network(subData["imageUrl"], height: 120),
-              ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.edit, color: Color.fromARGB(255, 135, 172, 79)),
-          onPressed: () => _editSubEntry(doc: doc),
-        ),
-      ),
-    );
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_surauData == null) {
+      return const Scaffold(
+        body: Center(child: Text('No surau data found')),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore
-            .collection("form")
-            .doc(widget.surauId)
-            .collection("surauDetails")
-            .doc("surauDetails_data")
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("Belum ada maklumat, sila tambah."));
-          }
-
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          final tarikhKemaskini = data["tarikhKemaskini"] != null
-              ? "${DateTime.parse(data["tarikhKemaskini"]).day}-${DateTime.parse(data["tarikhKemaskini"]).month}-${DateTime.parse(data["tarikhKemaskini"]).year}"
-              : "-";
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (data["imageUrl"] != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(data["imageUrl"], height: 200, fit: BoxFit.cover),
-                ),
-              const SizedBox(height: 12),
-              buildMainCard("Nama Surau", data["namaSurau"] ?? "-", "namaSurau"),
-              buildMainCard("Lokasi", data["lokasi"] ?? "-", "lokasi"),
-              buildMainCard("Kapasiti", data["kapasiti"] ?? "-", "kapasiti"),
-              StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection("form")
-                    .doc(widget.surauId)
-                    .collection("surauDetails")
-                    .doc("surauDetails_data")
-                    .collection("subEntries")
-                    .orderBy("createdAt", descending: true)
-                    .snapshots(),
-                builder: (context, subSnapshot) {
-                  if (!subSnapshot.hasData || subSnapshot.data!.docs.isEmpty) {
-                    return const Text("Tiada maklumat tambahan.");
-                  }
-                  final docs = subSnapshot.data!.docs;
-                  return Column(
-                    children: docs.map((doc) => buildSubCard(doc)).toList(),
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
-              Text("Tarikh Kemaskini: $tarikhKemaskini"),
-            ],
-          );
-        },
+      appBar: AppBar(
+        title: Text(widget.surauName),
+        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
       ),
-      bottomNavigationBar: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: () => _editSubEntry(),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text("Tambah Butiran Baru", style: TextStyle(color: Colors.white)),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: _pickImage,
+              child: CircleAvatar(
+                radius: 70,
+                backgroundImage: _surauData!['photoUrl'] != null
+                    ? NetworkImage(_surauData!['photoUrl'])
+                    : const AssetImage('assets/default_surau.png')
+                        as ImageProvider,
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 20,
+                    child: const Icon(Icons.camera_alt,
+                        color: Color.fromARGB(255, 135, 172, 79)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _surauData!['surauName'] ?? 'Unnamed Surau',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _surauData!['address'] ?? 'No address provided',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            if (_surauData!['description'] != null)
+              Text(
+                _surauData!['description'],
+                style: const TextStyle(fontSize: 16),
+              ),
+          ],
         ),
       ),
     );

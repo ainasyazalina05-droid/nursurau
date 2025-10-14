@@ -50,4 +50,6 @@ flutter:
   assets:
     - assets/
     - assets/logo.png
+    - assets/default_surau.png
+
 
