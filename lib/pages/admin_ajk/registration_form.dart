@@ -45,7 +45,11 @@ class _AjkRegisterFormState extends State<RegisterForm> {
         // ✅ Step 1: Create main document in "form" collection
         await firestore.collection("form").doc(surauDocId).set({
           "surauName": _surauName.text.trim(),
-        });
+          "surauAddress": _surauAddress.text.trim(),
+          "status": "pending", // 🔥 Tambah ni supaya dashboard boleh detect
+          "createdAt": Timestamp.now(),
+          });
+
 
         // ✅ Step 2: Create subcollection "ajk" → document "ajk_data"
         await firestore
