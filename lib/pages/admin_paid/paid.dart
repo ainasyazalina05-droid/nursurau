@@ -31,6 +31,25 @@ class AdminPaidPage extends StatelessWidget {
 class OfficerDashboard extends StatelessWidget {
   const OfficerDashboard({super.key});
 
+  Future<String> _getAjkName(String docId) async {
+    try {
+      final ajkDoc = await FirebaseFirestore.instance
+          .collection("form")
+          .doc(docId)
+          .collection("ajk")
+          .doc("ajk_data")
+          .get();
+
+      if (ajkDoc.exists) {
+        return ajkDoc.data()?["ajkName"] ?? "-";
+      } else {
+        return "-";
+      }
+    } catch (e) {
+      return "-";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,45 +84,53 @@ class OfficerDashboard extends StatelessWidget {
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       var data = docs[index].data() as Map<String, dynamic>;
-                      return Card(
-                        color: const Color(0xFFF5F2E7),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          leading: const Icon(Icons.pending_actions,
-                              color: Color(0xFF2E7D32)),
-                          title: Text(
-                            data["surauName"] ?? "No name",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                      var docId = docs[index].id;
+
+                      return FutureBuilder<String>(
+                        future: _getAjkName(docId),
+                        builder: (context, ajkSnapshot) {
+                          String ajkName = ajkSnapshot.data ?? "-";
+
+                          return Card(
+                            color: const Color(0xFFF5F2E7),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          subtitle: Text("AJK: ${data["ajkName"] ?? "-"}"),
-                          trailing: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: const Icon(Icons.pending_actions,
+                                  color: Color(0xFF2E7D32)),
+                              title: Text(
+                                data["surauName"] ?? "No name",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              subtitle: Text("AJK: $ajkName"),
+                              trailing: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF2E7D32),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "View Form",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ViewForm(docId: docId),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                            child: const Text(
-                              "View Form",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      ViewForm(docId: docs[index].id),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
                   );

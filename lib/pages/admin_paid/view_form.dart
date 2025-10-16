@@ -34,26 +34,37 @@ class ViewForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection("form").doc(docId).get(),
-      builder: (context, snapshot) {
+    final formRef = FirebaseFirestore.instance.collection("form").doc(docId);
+    final ajkRef = formRef.collection("ajk").doc("ajk_data");
+
+    return FutureBuilder(
+      future: Future.wait([
+        formRef.get(),
+        ajkRef.get(),
+      ]),
+      builder: (context, AsyncSnapshot<List<DocumentSnapshot>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (!snapshot.hasData || !snapshot.data!.exists) {
+
+        if (!snapshot.hasData ||
+            !snapshot.data![0].exists ||
+            !snapshot.data![1].exists) {
           return const Scaffold(
-            body: Center(child: Text("Form tidak dijumpai.")),
+            body: Center(child: Text("Maklumat tidak dijumpai.")),
           );
         }
 
-        var data = snapshot.data!.data() as Map<String, dynamic>;
+        // Ambil data dari Firestore
+        var formData = snapshot.data![0].data() as Map<String, dynamic>;
+        var ajkData = snapshot.data![1].data() as Map<String, dynamic>;
 
         return Scaffold(
           appBar: AppBar(
             title: const Text("Maklumat Pendaftaran"),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color.fromARGB(255, 135, 172, 79),
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -65,21 +76,21 @@ class ViewForm extends StatelessWidget {
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text("Nama Surau: ${data['surauName'] ?? '-'}"),
-                  Text("Alamat: ${data['address'] ?? '-'}"),
+                  Text("Nama Surau: ${formData['surauName'] ?? '-'}"),
+                  Text("Alamat: ${formData['surauAddress'] ?? '-'}"),
                   const SizedBox(height: 20),
                   const Text("Maklumat AJK",
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text("Nama AJK: ${data['ajkName'] ?? '-'}"),
-                  Text("Emel: ${data['email'] ?? '-'}"),
-                  Text("Telefon: ${data['phone'] ?? '-'}"),
-                  Text("No. IC: ${data['ic'] ?? '-'}"),
+                  Text("Nama AJK: ${ajkData['ajkName'] ?? '-'}"),
+                  Text("No. IC: ${ajkData['ic'] ?? '-'}"),
+                  Text("Emel: ${ajkData['email'] ?? '-'}"),
+                  Text("Telefon: ${ajkData['phone'] ?? '-'}"),
                   const SizedBox(height: 20),
-                  Text("Status: ${data['status'] ?? 'pending'}",
+                  Text("Status: ${ajkData['status'] ?? 'pending'}",
                       style: TextStyle(
-                        color: data['status'] == 'approved'
+                        color: ajkData['status'] == 'approved'
                             ? Colors.green
                             : Colors.orange,
                         fontWeight: FontWeight.bold,
