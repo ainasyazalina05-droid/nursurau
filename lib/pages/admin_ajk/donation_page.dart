@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class DonationPage extends StatefulWidget {
   final String ajkId;
@@ -17,6 +21,9 @@ class _DonationPageState extends State<DonationPage> {
   final _descController = TextEditingController();
   final _bankController = TextEditingController();
   final _qrController = TextEditingController();
+
+  File? _image;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -48,6 +55,38 @@ class _DonationPageState extends State<DonationPage> {
     }
   }
 
+  // 📸 Pick image from gallery
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _image = File(picked.path));
+    }
+  }
+
+  // ☁️ Upload image to Cloudinary
+  Future<String?> _uploadToCloudinary(File image) async {
+    const cloudName = 'dvrws03cg'; // ganti dengan cloud name kamu
+    const uploadPreset = 'unsigned_preset'; // ganti dengan preset
+
+    final url =
+        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = uploadPreset
+      ..files.add(await http.MultipartFile.fromPath('file', image.path));
+
+    final response = await request.send();
+    final responseData = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(responseData);
+      return jsonData['secure_url'];
+    } else {
+      debugPrint('Upload failed: ${response.reasonPhrase}');
+      return null;
+    }
+  }
+
   Future<void> _addDonation() async {
     if (_surauId == null) return;
 
@@ -63,6 +102,13 @@ class _DonationPageState extends State<DonationPage> {
       return;
     }
 
+    setState(() => _isUploading = true);
+    String? imageUrl;
+
+    if (_image != null) {
+      imageUrl = await _uploadToCloudinary(_image!);
+    }
+
     try {
       await FirebaseFirestore.instance
           .collection('suraus')
@@ -73,6 +119,7 @@ class _DonationPageState extends State<DonationPage> {
         'description': desc,
         'bankAccount': bank,
         'qrUrl': qrUrl,
+        'imageUrl': imageUrl ?? '',
         'createdBy': widget.ajkId,
         'dateCreated': FieldValue.serverTimestamp(),
       });
@@ -81,6 +128,7 @@ class _DonationPageState extends State<DonationPage> {
       _descController.clear();
       _bankController.clear();
       _qrController.clear();
+      setState(() => _image = null);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Derma baru ditambah!")),
@@ -89,6 +137,8 @@ class _DonationPageState extends State<DonationPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Ralat menambah derma: $e")),
       );
+    } finally {
+      setState(() => _isUploading = false);
     }
   }
 
@@ -139,11 +189,14 @@ class _DonationPageState extends State<DonationPage> {
                         .orderBy('dateCreated', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(
+                            child: CircularProgressIndicator());
                       }
 
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      if (!snapshot.hasData ||
+                          snapshot.data!.docs.isEmpty) {
                         return const Center(child: Text("Tiada derma lagi."));
                       }
 
@@ -162,10 +215,23 @@ class _DonationPageState extends State<DonationPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ListTile(
+                              leading: data['imageUrl'] != null &&
+                                      (data['imageUrl'] as String).isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        data['imageUrl'],
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : const Icon(Icons.image, size: 50),
                               title: Text(data['name'] ?? ''),
                               subtitle: Text(data['description'] ?? ''),
                               trailing: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
                                 onPressed: () => _deleteDonation(docId),
                               ),
                               onTap: () {
@@ -188,6 +254,22 @@ class _DonationPageState extends State<DonationPage> {
                                             color: Colors.grey,
                                           ),
                                         ),
+                                        if (data['imageUrl'] != null &&
+                                            (data['imageUrl'] as String)
+                                                .isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 10),
+                                            child: Image.network(
+                                              data['imageUrl'],
+                                              height: 150,
+                                              errorBuilder: (context, _, __) =>
+                                                  const Icon(
+                                                Icons.image,
+                                                size: 80,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -237,17 +319,36 @@ class _DonationPageState extends State<DonationPage> {
                           border: OutlineInputBorder(),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 135, 172, 79),
-                          minimumSize: const Size(double.infinity, 45),
-                        ),
-                        onPressed: _addDonation,
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text("Tambah", style: TextStyle(color: Colors.white)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.image),
+                            label: const Text("Pilih Gambar"),
+                          ),
+                          const SizedBox(width: 10),
+                          if (_image != null)
+                            Text(
+                              "✅ Gambar dipilih",
+                              style: TextStyle(color: Colors.green[700]),
+                            ),
+                        ],
                       ),
+                      const SizedBox(height: 10),
+                      _isUploading
+                          ? const CircularProgressIndicator()
+                          : ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromARGB(
+                                    255, 135, 172, 79),
+                                minimumSize: const Size(double.infinity, 45),
+                              ),
+                              onPressed: _addDonation,
+                              icon: const Icon(Icons.add, color: Colors.white),
+                              label: const Text("Tambah",
+                                  style: TextStyle(color: Colors.white)),
+                            ),
                     ],
                   ),
                 ),

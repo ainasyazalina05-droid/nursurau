@@ -22,7 +22,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     _pages = [
       DonationPage(ajkId: widget.ajkId),
-      PostingPage(ajkId: widget.ajkId),
+      const PostingPage(), // ✅ no parameter now
       SurauDetailsPage(ajkId: widget.ajkId),
     ];
   }
