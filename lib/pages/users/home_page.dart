@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
     }).toList();
 
     setState(() {
-      _followed = list;
+     List<Map<String, dynamic>> _followed = [];
     });
   }
 

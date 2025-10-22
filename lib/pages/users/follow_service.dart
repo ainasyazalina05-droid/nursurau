@@ -1,65 +1,42 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class FollowService {
-  static const String _followedKey = 'followed_list';
+  static const _key = "followed_suraus";
 
-  /// Returns raw list entries in the format "name|image"
+  /// Load followed surau IDs from local storage
   static Future<List<String>> loadFollowed() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_followedKey) ?? [];
+    final data = prefs.getStringList(_key) ?? [];
+    return data;
   }
 
-  /// Add a followed entry (name + image). If a follow for the same name already exists, it will not add another.
-  static Future<void> addFollow(String name, String image) async {
+  /// Save followed surau IDs
+  static Future<void> saveFollowed(List<String> ids) async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> followed = prefs.getStringList(_followedKey) ?? [];
-    // keep only one entry per name
-    final exists = followed.any((e) => e.split("|").first == name);
-    if (!exists) {
-      followed.add(_encode(name, image));
-      await prefs.setStringList(_followedKey, followed);
-    }
+    await prefs.setStringList(_key, ids);
   }
 
-  /// Remove any followed entry with the given name.
-  static Future<void> removeFollowByName(String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> followed = prefs.getStringList(_followedKey) ?? [];
-    followed.removeWhere((e) => e.split("|").first == name);
-    await prefs.setStringList(_followedKey, followed);
+  /// Check if a surau is followed
+  static Future<bool> isFollowedById(String surauId) async {
+    final followed = await loadFollowed();
+    return followed.contains(surauId);
   }
 
-  /// Toggle follow by name. If not followed -> add with image; if followed -> remove.
-  static Future<void> toggleFollowByName(String name, String image) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> followed = prefs.getStringList(_followedKey) ?? [];
-    final index = followed.indexWhere((e) => e.split("|").first == name);
-    if (index >= 0) {
-      // remove existing
-      followed.removeAt(index);
+  /// Toggle follow/unfollow
+  static Future<void> toggleFollowById(String surauId) async {
+    final followed = await loadFollowed();
+    if (followed.contains(surauId)) {
+      followed.remove(surauId);
     } else {
-      followed.add(_encode(name, image));
+      followed.add(surauId);
     }
-    await prefs.setStringList(_followedKey, followed);
+    await saveFollowed(followed);
   }
 
-  /// Returns true if there is any followed entry for this name.
-  static Future<bool> isFollowedByName(String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> followed = prefs.getStringList(_followedKey) ?? [];
-    return followed.any((e) => e.split("|").first == name);
-  }
+  static decode(String r) {}
 
-  /// Helper encode/decode
-  static String _encode(String name, String image) {
-    // use '|' as separator; ensure we don't contain '|' in names (unlikely). If you expect '|', change separator.
-    return "$name|$image";
-  }
+  static Future isFollowedByName(String surauName) async {}
 
-  static Map<String, String> decode(String raw) {
-    final parts = raw.split("|");
-    final name = parts.isNotEmpty ? parts[0] : "";
-    final image = parts.length > 1 ? parts.sublist(1).join("|") : "";
-    return {"name": name, "image": image};
-  }
+  static Future<void> toggleFollowByName(String surauName, String currentImageUrl) async {}
 }

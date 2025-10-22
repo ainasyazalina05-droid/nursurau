@@ -1,283 +1,258 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
 
-class DonationAdminPage extends StatefulWidget {
-  final String ajkId; // Only need AJK ID now
-
-  const DonationAdminPage({super.key, required this.ajkId, required String surauName});
+class DonationPage extends StatefulWidget {
+  final String ajkId;
+  const DonationPage({super.key, required this.ajkId});
 
   @override
-  State<DonationAdminPage> createState() => _DonationAdminPageState();
+  State<DonationPage> createState() => _DonationPageState();
 }
 
-class _DonationAdminPageState extends State<DonationAdminPage> {
-  final _firestore = FirebaseFirestore.instance;
-  final _picker = ImagePicker();
+class _DonationPageState extends State<DonationPage> {
+  String? _surauId;
+  bool _isLoading = true;
 
-  Future<void> _editDonation(DocumentSnapshot? docSnapshot) async {
-    final data = docSnapshot?.data() as Map<String, dynamic>?;
-    final docId = docSnapshot?.id;
+  final _nameController = TextEditingController();
+  final _descController = TextEditingController();
+  final _bankController = TextEditingController();
+  final _qrController = TextEditingController();
 
-    final titleController = TextEditingController(text: data?['title']);
-    final amountController = TextEditingController(text: data?['amount']);
-    final descriptionController = TextEditingController(text: data?['description']);
-    final accountController = TextEditingController(text: data?['account']);
-    final contactController = TextEditingController(text: data?['contact']);
-    File? qrFile;
-    String? qrUrl = data?['qrUrl'];
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(docId == null ? "Tambah Derma" : "Kemaskini Derma"),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: "Judul Derma"),
-              ),
-              TextField(
-                controller: amountController,
-                decoration: const InputDecoration(labelText: "Jumlah Sasaran (RM)"),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: "Keterangan"),
-                maxLines: 3,
-              ),
-              TextField(
-                controller: accountController,
-                decoration: const InputDecoration(labelText: "No Akaun"),
-              ),
-              TextField(
-                controller: contactController,
-                decoration: const InputDecoration(labelText: "No Telefon AJK"),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.qr_code, color: Colors.white),
-                label: const Text("Pilih QR", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                onPressed: () async {
-                  final picked = await _picker.pickImage(source: ImageSource.gallery);
-                  if (picked != null && mounted) {
-                    setState(() => qrFile = File(picked.path));
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-              if (qrFile != null)
-                Image.file(qrFile!, height: 120)
-              else if (qrUrl != null && qrUrl!.isNotEmpty)
-                Image.network(qrUrl!, height: 120)
-              else
-                const Text("Tiada QR dipilih"),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (mounted) Navigator.pop(ctx);
-            },
-            child: const Text("Batal", style: TextStyle(color: Colors.black54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () async {
-              try {
-                if (titleController.text.trim().isEmpty ||
-                    amountController.text.trim().isEmpty ||
-                    descriptionController.text.trim().isEmpty ||
-                    accountController.text.trim().isEmpty ||
-                    contactController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Sila isi semua ruangan wajib."),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
-
-                if (double.tryParse(amountController.text.trim()) == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Jumlah sasaran mesti dalam nombor."),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
-
-                if (qrFile != null) {
-                  final ref = FirebaseStorage.instance.ref(
-                    "donation_qr/${DateTime.now().millisecondsSinceEpoch}.png",
-                  );
-                  await ref.putFile(qrFile!);
-                  qrUrl = await ref.getDownloadURL();
-                }
-
-                final donationData = {
-                  "title": titleController.text.trim(),
-                  "amount": amountController.text.trim(),
-                  "description": descriptionController.text.trim(),
-                  "account": accountController.text.trim(),
-                  "contact": contactController.text.trim(),
-                  "qrUrl": qrUrl ?? "",
-                  "ajkId": widget.ajkId,
-                  "createdAt": FieldValue.serverTimestamp(),
-                };
-
-                final donationRef = _firestore
-                    .collection("form")
-                    .doc(widget.ajkId) // ✅ Use AJK ID as the document
-                    .collection("donations");
-
-                if (docId != null) {
-                  await donationRef.doc(docId).update(donationData);
-                } else {
-                  await donationRef.add(donationData);
-                }
-
-                if (mounted) {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Maklumat derma berjaya disimpan."),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Ralat: ${e.toString()}"),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-              }
-            },
-            child: const Text("Simpan", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _getSurauId();
   }
 
-  Widget buildDonationCard(DocumentSnapshot docSnapshot) {
-    final data = docSnapshot.data() as Map<String, dynamic>;
-    final Timestamp? createdAtTs = data["createdAt"];
-    final createdAt = createdAtTs != null ? createdAtTs.toDate() : DateTime.now();
+  Future<void> _getSurauId() async {
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('suraus')
+          .where('ajkId', isEqualTo: widget.ajkId)
+          .limit(1)
+          .get();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color.fromARGB(255, 135, 172, 79), width: 1.5),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2))],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    data["title"] ?? "",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => _editDonation(docSnapshot),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                  child: const Text(
-                    "Kemaskini",
-                    style: TextStyle(fontSize: 14, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (data["qrUrl"] != null && data["qrUrl"].toString().isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(data["qrUrl"], height: 150, fit: BoxFit.cover),
-              ),
-            const SizedBox(height: 8),
-            Text("Jumlah Sasaran: RM ${data["amount"] ?? ""}"),
-            Text("Keterangan: ${data["description"] ?? ""}"),
-            Text("No Akaun: ${data["account"] ?? ""}"),
-            Text("No Telefon AJK: ${data["contact"] ?? ""}"),
-            Text(
-              "Tarikh Cipta: ${createdAt.day}-${createdAt.month}-${createdAt.year}",
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
+      if (query.docs.isNotEmpty) {
+        setState(() => _surauId = query.docs.first.id);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Tiada surau dijumpai untuk AJK ini.")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ralat memuat data: $e")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _addDonation() async {
+    if (_surauId == null) return;
+
+    final name = _nameController.text.trim();
+    final desc = _descController.text.trim();
+    final bank = _bankController.text.trim();
+    final qrUrl = _qrController.text.trim();
+
+    if (name.isEmpty || desc.isEmpty || bank.isEmpty || qrUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sila isi semua ruangan.")),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('suraus')
+          .doc(_surauId)
+          .collection('donations')
+          .add({
+        'name': name,
+        'description': desc,
+        'bankAccount': bank,
+        'qrUrl': qrUrl,
+        'createdBy': widget.ajkId,
+        'dateCreated': FieldValue.serverTimestamp(),
+      });
+
+      _nameController.clear();
+      _descController.clear();
+      _bankController.clear();
+      _qrController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Derma baru ditambah!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ralat menambah derma: $e")),
+      );
+    }
+  }
+
+  Future<void> _deleteDonation(String id) async {
+    if (_surauId == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('suraus')
+          .doc(_surauId)
+          .collection('donations')
+          .doc(id)
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Derma dipadam.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ralat memadam derma: $e")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final donationRef = _firestore
-        .collection("form")
-        .doc(widget.ajkId)
-        .collection("donations")
-        .orderBy("createdAt", descending: true);
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Senarai Derma", style: TextStyle(color: Colors.black)),
+        title: const Text("Derma Surau", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: donationRef.snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = snapshot.data!.docs;
-          if (docs.isEmpty) {
-            return const Center(child: Text("Belum ada maklumat, sila tambah."));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            itemBuilder: (ctx, index) => buildDonationCard(docs[index]),
-          );
-        },
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: () => _editDonation(null),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text("Tambah Derma", style: TextStyle(color: Colors.white)),
-        ),
-      ),
+      body: _surauId == null
+          ? const Center(child: Text("Tiada surau dijumpai."))
+          : Column(
+              children: [
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('suraus')
+                        .doc(_surauId)
+                        .collection('donations')
+                        .orderBy('dateCreated', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(child: Text("Tiada derma lagi."));
+                      }
+
+                      final donations = snapshot.data!.docs;
+
+                      return ListView.builder(
+                        itemCount: donations.length,
+                        itemBuilder: (context, index) {
+                          final data =
+                              donations[index].data() as Map<String, dynamic>;
+                          final docId = donations[index].id;
+
+                          return Card(
+                            margin: const EdgeInsets.all(10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              title: Text(data['name'] ?? ''),
+                              subtitle: Text(data['description'] ?? ''),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteDonation(docId),
+                              ),
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: Text(data['name']),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text("Akaun: ${data['bankAccount']}"),
+                                        const SizedBox(height: 10),
+                                        Image.network(
+                                          data['qrUrl'] ?? '',
+                                          height: 150,
+                                          errorBuilder:
+                                              (context, _, __) => const Icon(
+                                            Icons.qr_code,
+                                            size: 80,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: ExpansionTile(
+                    title: const Text("Tambah Derma Baru"),
+                    children: [
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: "Nama Derma",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _descController,
+                        decoration: const InputDecoration(
+                          labelText: "Penerangan",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _bankController,
+                        decoration: const InputDecoration(
+                          labelText: "No Akaun Bank",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _qrController,
+                        decoration: const InputDecoration(
+                          labelText: "Pautan QR (URL)",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 135, 172, 79),
+                          minimumSize: const Size(double.infinity, 45),
+                        ),
+                        onPressed: _addDonation,
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text("Tambah", style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

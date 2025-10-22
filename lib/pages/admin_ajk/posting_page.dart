@@ -1,236 +1,152 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
 
 class PostingPage extends StatefulWidget {
   final String ajkId;
-  final String surauName;
-  final String surauId;
 
-  const PostingPage({
-    super.key,
-    required this.ajkId,
-    required this.surauName,
-    required this.surauId,
-  });
+  const PostingPage({super.key, required this.ajkId});
 
   @override
   State<PostingPage> createState() => _PostingPageState();
 }
 
 class _PostingPageState extends State<PostingPage> {
-  final _firestore = FirebaseFirestore.instance;
-  final _picker = ImagePicker();
+  final _titleController = TextEditingController();
+  final _descController = TextEditingController();
 
-  Future<void> _editPost(DocumentSnapshot? docSnapshot) async {
-    final data = docSnapshot?.data() as Map<String, dynamic>?;
-    final docId = docSnapshot?.id;
+  Future<void> _addPost() async {
+    final title = _titleController.text.trim();
+    final desc = _descController.text.trim();
 
-    final titleController = TextEditingController(text: data?['title']);
-    final contentController = TextEditingController(text: data?['content']);
-    File? imageFile;
-    String? imageUrl = data?['imageUrl'];
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(docId == null ? "Tambah Posting" : "Kemaskini Posting"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: "Tajuk"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: contentController,
-                decoration: const InputDecoration(labelText: "Kandungan"),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.image),
-                label: const Text("Pilih Gambar"),
-                onPressed: () async {
-                  final picked = await _picker.pickImage(source: ImageSource.gallery);
-                  if (picked != null && mounted) {
-                    setState(() => imageFile = File(picked.path));
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-              if (imageFile != null)
-                Image.file(imageFile!, height: 120)
-              else if (imageUrl != null)
-                Image.network(imageUrl!, height: 120),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (imageFile != null) {
-                final ref = FirebaseStorage.instance.ref(
-                  "post_images/${DateTime.now().millisecondsSinceEpoch}.png",
-                );
-                await ref.putFile(imageFile!);
-                imageUrl = await ref.getDownloadURL();
-              }
-
-              if (docId != null) {
-                // Update existing post
-                await _firestore.collection("posts").doc(docId).update({
-                  "title": titleController.text,
-                  "content": contentController.text,
-                  "imageUrl": imageUrl,
-                  "updatedAt": FieldValue.serverTimestamp(),
-                });
-              } else {
-                // Create new post
-                await _firestore.collection("posts").add({
-                  "title": titleController.text,
-                  "content": contentController.text,
-                  "imageUrl": imageUrl,
-                  "createdAt": FieldValue.serverTimestamp(),
-                  "ajkId": widget.ajkId,
-                  "surauName": widget.surauName,
-                  "surauId": widget.surauId,
-                });
-              }
-
-              if (mounted) Navigator.pop(ctx);
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildPostCard(DocumentSnapshot docSnapshot) {
-    final data = docSnapshot.data() as Map<String, dynamic>;
-
-    // ✅ Handle createdAt type safely (Timestamp or String)
-    DateTime createdAt;
-    if (data["createdAt"] is Timestamp) {
-      createdAt = (data["createdAt"] as Timestamp).toDate();
-    } else if (data["createdAt"] is String) {
-      createdAt = DateTime.tryParse(data["createdAt"]) ?? DateTime.now();
-    } else {
-      createdAt = DateTime.now();
+    if (title.isEmpty || desc.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sila isi semua ruangan.")),
+      );
+      return;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: const Color.fromARGB(255, 135, 172, 79),
-          width: 1.5,
-        ),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2)),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title and edit button row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    data["title"] ?? "",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => _editPost(docSnapshot),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  child: const Text("Kemaskini", style: TextStyle(fontSize: 14, color: Colors.white)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+    try {
+      await FirebaseFirestore.instance.collection('posts').add({
+        'ajkId': widget.ajkId,
+        'title': title,
+        'description': desc,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-            // Image preview
-            if (data["imageUrl"] != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  data["imageUrl"],
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            const SizedBox(height: 8),
+      _titleController.clear();
+      _descController.clear();
 
-            // Content
-            Text("Kandungan: ${data["content"] ?? ""}"),
-
-            const SizedBox(height: 4),
-
-            // Date
-            Text(
-              "Tarikh: ${createdAt.day}-${createdAt.month}-${createdAt.year}",
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Berjaya menambah posting.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ralat semasa menambah posting: $e")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore.collection("posts").orderBy("createdAt", descending: true).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Belum ada posting, sila tambah."));
-          }
-
-          final docs = snapshot.data!.docs;
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            itemBuilder: (ctx, index) => buildPostCard(docs[index]),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _editPost(null),
-        label: const Text("Tambah Posting"),
-        icon: const Icon(Icons.add),
+      appBar: AppBar(
+        title: const Text("Posting AJK", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: "Tajuk",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: "Penerangan",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+                    minimumSize: const Size(double.infinity, 45),
+                  ),
+                  onPressed: _addPost,
+                  icon: const Icon(Icons.send, color: Colors.white),
+                  label: const Text(
+                    "Hantar Posting",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          const Text(
+            "Senarai Posting",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('posts')
+                  .where('ajkId', isEqualTo: widget.ajkId)
+                  .orderBy('timestamp', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("Tiada posting buat masa ini."));
+                }
+
+                final posts = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) {
+                    final post = posts[index];
+                    final data = post.data() as Map<String, dynamic>;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ListTile(
+                        title: Text(data['title'] ?? 'Tiada tajuk'),
+                        subtitle: Text(data['description'] ?? 'Tiada penerangan'),
+                        trailing: Text(
+                          data['timestamp'] != null
+                              ? (data['timestamp'] as Timestamp)
+                                  .toDate()
+                                  .toLocal()
+                                  .toString()
+                                  .split('.')[0]
+                              : '',
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
