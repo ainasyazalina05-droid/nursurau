@@ -25,8 +25,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
       // Switch manually for testing which side to open
-      home: LoginPage(), // Admin AJK login
-      // home: HomePage(), // User
+     //home: LoginPage(), // Admin AJK login
+      home: HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat admin
     );
   }
