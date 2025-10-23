@@ -41,97 +41,154 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
       body: StreamBuilder<DocumentSnapshot>(
         stream: surauRef.snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final data = snapshot.data!.data() as Map<String, dynamic>?;
 
-          if (data == null) return const Center(child: Text("Surau tidak ditemui"));
+          if (data == null) {
+            return const Center(child: Text("Surau tidak ditemui"));
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Surau Image
+                // 🔹 Surau image
                 if (data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     child: Image.network(
                       data['imageUrl'],
-                      height: 180,
+                      height: 200,
+                      width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.mosque, size: 80),
                     ),
                   )
                 else
-                  const Icon(Icons.mosque, size: 80, color: Colors.green),
-                const SizedBox(height: 12),
+                  Container(
+                    height: 180,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.mosque, size: 80, color: Colors.green),
+                  ),
+                const SizedBox(height: 16),
 
-                // Name & Follow
+                // 🔹 Surau name + follow
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(data['name'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Text(
+                        data['name'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                     IconButton(
-                      icon: Icon(_isFollowed ? Icons.favorite : Icons.favorite_border, color: Colors.red),
+                      icon: Icon(
+                        _isFollowed ? Icons.favorite : Icons.favorite_border,
+                        color: Colors.red,
+                        size: 28,
+                      ),
                       onPressed: _toggleFollow,
                     ),
                   ],
                 ),
-
-                // Address & Nazir
-                Text(data['address'] ?? ''),
+                const SizedBox(height: 6),
+                Text(
+                  data['address'] ?? '',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
                 const SizedBox(height: 4),
                 Text("Nazir: ${data['nazirName'] ?? ''}"),
                 Text("Tel: ${data['nazirPhone'] ?? ''}"),
-                const Divider(height: 20),
+                const Divider(height: 30, thickness: 1.2),
 
-                // 🔹 Posts
-                const Text("Posting Surau", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                // 🔹 Posting section
+                const Text(
+                  "Posting Surau",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('posts')
-                      .where('surauId', isEqualTo: widget.surauId)
                       .orderBy('timestamp', descending: true)
                       .snapshots(),
                   builder: (context, postSnap) {
-                    if (!postSnap.hasData) return const CircularProgressIndicator();
+                    if (postSnap.hasError) {
+                      return const Text('Ralat memuatkan posting.');
+                    }
+                    if (!postSnap.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
                     final posts = postSnap.data!.docs;
-                    if (posts.isEmpty) return const Text("Tiada posting setakat ini");
+                    if (posts.isEmpty) {
+                      return const Text("Tiada posting setakat ini");
+                    }
 
                     return Column(
                       children: posts.map((doc) {
                         final p = doc.data() as Map<String, dynamic>;
+                        final ts = p['timestamp'] != null
+                            ? (p['timestamp'] as Timestamp).toDate()
+                            : null;
+
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
                           child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                            padding: const EdgeInsets.all(12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(p['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 4),
+                                Text(
+                                  p['title'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                if (p['category'] != null)
+                                  Chip(
+                                    label: Text(p['category']),
+                                    backgroundColor: Colors.green.shade50,
+                                    side: BorderSide.none,
+                                  ),
+                                const SizedBox(height: 6),
                                 Text(p['description'] ?? ''),
+                                const SizedBox(height: 8),
                                 if (p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        p['imageUrl'],
-                                        height: 150,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => const Icon(Icons.image),
-                                      ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      p['imageUrl'],
+                                      height: 160,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 6),
                                 Text(
-                                  p['timestamp'] != null
-                                      ? (p['timestamp'] as Timestamp).toDate().toString()
+                                  ts != null
+                                      ? "${ts.day}/${ts.month}/${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}"
                                       : '',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ],
                             ),
