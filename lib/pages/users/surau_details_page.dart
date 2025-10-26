@@ -36,8 +36,9 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Maklumat Surau'),
+        title: const Text('Maklumat Surau', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF87AC4F),
+        centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: surauRef.snapshots(),
@@ -57,7 +58,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 🔹 Surau Info Card
+                // 🔹 Surau Info Card (with image)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -85,11 +86,11 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                               )
                             : Container(
                                 height: 200,
-                                color: Colors.green.shade50,
+                                color: const Color.fromARGB(255, 232, 245, 233),
                                 child: const Icon(
                                   Icons.mosque,
                                   size: 80,
-                                  color: Colors.green,
+                                  color: Color.fromARGB(255, 135, 172, 79),
                                 ),
                               ),
                       ),
@@ -117,9 +118,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                           backgroundColor: _isFollowed
                               ? Colors.grey.shade300
                               : const Color(0xFF87AC4F),
-                          foregroundColor: _isFollowed
-                              ? Colors.black87
-                              : Colors.white,
+                          foregroundColor:
+                              _isFollowed ? Colors.black87 : Colors.white,
                           minimumSize: const Size(double.infinity, 45),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -185,18 +185,15 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                   stream: surauRef.snapshots(),
                   builder: (context, surauSnap) {
                     if (!surauSnap.hasData) {
-                      return const Center(
-                          child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     final surauData =
                         surauSnap.data!.data() as Map<String, dynamic>?;
                     if (surauData == null || surauData['ajkId'] == null) {
-                      return const Text(
-                          "Tiada AJK dikaitkan dengan surau ini.");
+                      return const Text("Tiada AJK dikaitkan dengan surau ini.");
                     }
 
-                    // ✅ FIXED QUERY — no index needed, no error
                     return StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('posts')
@@ -216,7 +213,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                           return const Text("Tiada posting setakat ini");
                         }
 
-                        // ✅ Sort manually (so no Firestore index needed)
+                        // ✅ Sort manually (no Firestore index needed)
                         posts.sort((a, b) {
                           final t1 = (a['timestamp'] as Timestamp?)?.toDate();
                           final t2 = (b['timestamp'] as Timestamp?)?.toDate();
@@ -232,8 +229,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                                 : null;
 
                             return Card(
-                              margin:
-                                  const EdgeInsets.symmetric(vertical: 8),
+                              margin: const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -241,8 +237,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                               child: Padding(
                                 padding: const EdgeInsets.all(14),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       p['title'] ?? '',
