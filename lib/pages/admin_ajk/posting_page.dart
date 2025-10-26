@@ -1,12 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class PostingPage extends StatefulWidget {
-  final String ajkId; // 🔹 AJK ID diterima dari halaman log masuk atau profil
+  final String ajkId;
   const PostingPage({super.key, required this.ajkId});
 
   @override
@@ -28,7 +28,6 @@ class _PostingPageState extends State<PostingPage> {
     'Sumbangan'
   ];
 
-  // Pilih gambar dari galeri
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -37,10 +36,9 @@ class _PostingPageState extends State<PostingPage> {
     }
   }
 
-  // Muat naik ke Cloudinary
   Future<String?> _uploadToCloudinary(File image) async {
-    const cloudName = 'dvrws03cg'; // Ganti dengan Cloudinary cloud name kamu
-    const uploadPreset = 'unsigned_preset'; // Ganti dengan preset kamu
+    const cloudName = 'dvrws03cg';
+    const uploadPreset = 'unsigned_preset';
 
     final url =
         Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
@@ -53,14 +51,13 @@ class _PostingPageState extends State<PostingPage> {
 
     if (response.statusCode == 200) {
       final jsonData = json.decode(responseData);
-      return jsonData['secure_url']; // Cloudinary image URL
+      return jsonData['secure_url'];
     } else {
       debugPrint('Upload failed: ${response.reasonPhrase}');
       return null;
     }
   }
 
-  // Muat naik posting ke Firestore
   Future<void> _uploadPost() async {
     if (_titleController.text.isEmpty ||
         _descController.text.isEmpty ||
@@ -73,13 +70,12 @@ class _PostingPageState extends State<PostingPage> {
 
     setState(() => _isUploading = true);
     String? imageUrl;
-
     if (_image != null) {
       imageUrl = await _uploadToCloudinary(_image!);
     }
 
     await _firestore.collection('posts').add({
-      'ajkId': widget.ajkId, // 🔹 Simpan ID AJK
+      'ajkId': widget.ajkId,
       'title': _titleController.text,
       'description': _descController.text,
       'category': _selectedCategory,
@@ -100,189 +96,301 @@ class _PostingPageState extends State<PostingPage> {
     );
   }
 
-  // Padam posting
-  Future<void> _deletePost(String postId) async {
-    await _firestore.collection('posts').doc(postId).delete();
+  Future<void> _updatePost(String postId) async {
+    setState(() => _isUploading = true);
+    String? imageUrl;
+    if (_image != null) {
+      imageUrl = await _uploadToCloudinary(_image!);
+    }
+
+    await _firestore.collection('posts').doc(postId).update({
+      'title': _titleController.text.trim(),
+      'description': _descController.text.trim(),
+      'category': _selectedCategory,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+    });
+
+    setState(() {
+      _isUploading = false;
+      _image = null;
+      _titleController.clear();
+      _descController.clear();
+      _selectedCategory = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('✅ Posting berjaya dikemaskini!')),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pengurusan Posting Surau'),
-        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // 🔹 Paparan Senarai Posting di atas
-            const Text(
-              'Senarai Posting',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
+  void _editPost(String postId, Map<String, dynamic> data) {
+    _titleController.text = data['title'] ?? '';
+    _descController.text = data['description'] ?? '';
+    _selectedCategory = data['category'];
 
-            StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('posts')
-                  .where('ajkId', isEqualTo: widget.ajkId)
-                  // .orderBy('timestamp', descending: true) // ❌ remove for now
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  debugPrint('🔥 Firestore error: ${snapshot.error}');
-                  return Text(
-                    'Ralat memuatkan data:\n${snapshot.error}',
-                    style: const TextStyle(color: Colors.red),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text('Tiada posting buat masa ini.');
-                }
-
-                final posts = snapshot.data!.docs;
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final data = posts[index].data() as Map<String, dynamic>;
-                    final postId = posts[index].id;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        title: Text(data['title'] ?? ''),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(data['description'] ?? ''),
-                            const SizedBox(height: 5),
-                            if (data['category'] != null)
-                              Text(
-                                "Kategori: ${data['category']}",
-                                style: const TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            if (data['imageUrl'] != null &&
-                                (data['imageUrl'] as String).isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  data['imageUrl'],
-                                  height: 180,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  },
-                                  errorBuilder:
-                                      (context, error, stackTrace) => const Text(
-                                    '❌ Gagal memuat gambar',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deletePost(postId),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-
-            const SizedBox(height: 30),
-            const Divider(thickness: 1.5),
-            const SizedBox(height: 10),
-
-            // 🔹 Borang Tambah Posting di bawah sekali
-            ExpansionTile(
-              title: const Text('Tambah Posting Baru'),
-              iconColor: Colors.teal,
-              collapsedIconColor: Colors.teal,
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Kemaskini Posting"),
+          content: SingleChildScrollView(
+            child: Column(
               children: [
                 TextField(
                   controller: _titleController,
                   decoration: const InputDecoration(
-                    labelText: 'Tajuk',
-                    border: OutlineInputBorder(),
-                  ),
+                      labelText: "Tajuk", border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _descController,
                   maxLines: 3,
                   decoration: const InputDecoration(
-                    labelText: 'Keterangan',
-                    border: OutlineInputBorder(),
-                  ),
+                      labelText: "Keterangan", border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(),
-                  ),
+                      labelText: "Kategori", border: OutlineInputBorder()),
                   value: _selectedCategory,
-                  onChanged: (value) => setState(() => _selectedCategory = value),
+                  onChanged: (val) => setState(() => _selectedCategory = val),
                   items: _categories
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                       .toList(),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.image),
-                      label: const Text('Pilih Gambar'),
-                    ),
-                    const SizedBox(width: 10),
-                    if (_image != null)
-                      Text(
-                        '✅ Gambar dipilih',
-                        style: TextStyle(color: Colors.green[700]),
-                      ),
-                  ],
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.image),
+                    label: const Text("Tukar Gambar (jika perlu)"),
+                  ),
                 ),
-                const SizedBox(height: 10),
-                _isUploading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton.icon(
-                        onPressed: _uploadPost,
-                        icon: const Icon(Icons.upload),
-                        label: const Text('Muat Naik Posting'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 135, 172, 79),
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
+                if (_image != null)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      '✅ Gambar dipilih',
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  ),
               ],
             ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _updatePost(postId);
+              },
+              child: const Text("Simpan"),
+            ),
           ],
-        ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deletePost(String postId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Sahkan Padam"),
+        content: const Text("Adakah anda pasti ingin memadam posting ini?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Padam"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _firestore.collection('posts').doc(postId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Posting berjaya dipadam.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ralat memadam posting: $e")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // 🔹 Borang Tambah Posting
+          ExpansionTile(
+            title: const Text('Tambah Posting Baru'),
+            iconColor: Colors.teal,
+            collapsedIconColor: Colors.teal,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                          labelText: 'Tajuk', border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _descController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                          labelText: 'Keterangan',
+                          border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                          labelText: 'Kategori', border: OutlineInputBorder()),
+                      value: _selectedCategory,
+                      onChanged: (value) =>
+                          setState(() => _selectedCategory = value),
+                      items: _categories
+                          .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.image),
+                        label: const Text('Pilih Gambar'),
+                      ),
+                    ),
+                    if (_image != null)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          '✅ Gambar dipilih',
+                          style: TextStyle(color: Colors.green),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    _isUploading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton.icon(
+                            onPressed: _uploadPost,
+                            icon: const Icon(Icons.upload),
+                            label: const Text('Muat Naik Posting'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  const Color.fromARGB(255, 135, 172, 79),
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+          StreamBuilder<QuerySnapshot>(
+            stream: _firestore
+                .collection('posts')
+                .where('ajkId', isEqualTo: widget.ajkId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Text(
+                  'Ralat: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red),
+                );
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Text('Tiada posting buat masa ini.');
+              }
+
+              final posts = snapshot.data!.docs;
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: posts.length,
+                itemBuilder: (context, index) {
+                  final data = posts[index].data() as Map<String, dynamic>;
+                  final postId = posts[index].id;
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      title: Text(data['title'] ?? ''),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(data['description'] ?? ''),
+                          const SizedBox(height: 5),
+                          if (data['category'] != null)
+                            Text(
+                              "Kategori: ${data['category']}",
+                              style: const TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                          if (data['imageUrl'] != null &&
+                              (data['imageUrl'] as String).isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                data['imageUrl'],
+                                height: 180,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _editPost(postId, data),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _deletePost(postId),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

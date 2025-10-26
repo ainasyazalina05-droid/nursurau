@@ -183,11 +183,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     final themeColor = const Color.fromARGB(255, 135, 172, 79);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Maklumat Surau", style: TextStyle(color: Colors.white)),
-        backgroundColor: themeColor,
-        centerTitle: true,
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

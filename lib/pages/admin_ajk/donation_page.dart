@@ -52,7 +52,8 @@ class _DonationPageState extends State<DonationPage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() => _image = File(pickedFile.path));
     }
@@ -62,7 +63,8 @@ class _DonationPageState extends State<DonationPage> {
     const cloudName = 'dvrws03cg';
     const uploadPreset = 'unsigned_preset';
 
-    final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final uri =
+        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
     final request = http.MultipartRequest('POST', uri)
       ..fields['upload_preset'] = uploadPreset
       ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
@@ -208,25 +210,36 @@ class _DonationPageState extends State<DonationPage> {
               children: [
                 TextField(
                   controller: _titleController,
-                  decoration: const InputDecoration(labelText: "Tajuk"),
-                ),
-                TextField(
-                  controller: _descController,
-                  decoration: const InputDecoration(labelText: "Penerangan"),
-                ),
-                TextField(
-                  controller: _bankController,
-                  decoration: const InputDecoration(labelText: "No Akaun Bank"),
-                ),
-                TextField(
-                  controller: _qrUrlController,
-                  decoration: const InputDecoration(labelText: "Pautan QR"),
+                  decoration: const InputDecoration(
+                      labelText: "Tajuk", border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.image),
-                  label: const Text("Tukar Gambar (jika perlu)"),
+                TextField(
+                  controller: _descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                      labelText: "Penerangan", border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _bankController,
+                  decoration: const InputDecoration(
+                      labelText: "No Akaun Bank", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _qrUrlController,
+                  decoration: const InputDecoration(
+                      labelText: "Pautan QR", border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.image),
+                    label: const Text("Tukar Gambar (jika perlu)"),
+                  ),
                 ),
               ],
             ),
@@ -250,6 +263,26 @@ class _DonationPageState extends State<DonationPage> {
   }
 
   Future<void> _deleteDonation(String donationId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Padam Sumbangan"),
+        content: const Text("Adakah anda pasti mahu memadam sumbangan ini?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Padam"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await FirebaseFirestore.instance
           .collection('suraus')
@@ -278,126 +311,160 @@ class _DonationPageState extends State<DonationPage> {
       return const Center(child: Text("Tiada surau dijumpai untuk AJK ini."));
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Sumbangan Surau"),
-        backgroundColor: Colors.green.shade700,
-      ),
-      body: Column(
+    return SingleChildScrollView(
+      child: Column(
         children: [
+          // 🔹 Add Donation Form like Posting Page
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(labelText: "Tajuk"),
-                ),
-                TextField(
-                  controller: _descController,
-                  decoration: const InputDecoration(labelText: "Penerangan"),
-                ),
-                TextField(
-                  controller: _bankController,
-                  decoration: const InputDecoration(labelText: "No Akaun Bank"),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: _qrUrlController,
-                  decoration: const InputDecoration(labelText: "Pautan QR (jika ada)"),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.image),
-                      label: const Text("Pilih Gambar"),
+            child: Card(
+              elevation: 3,
+              child: ExpansionTile(
+                title: const Text('Tambah Sumbangan Baru'),
+                iconColor: Colors.teal,
+                collapsedIconColor: Colors.teal,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                              labelText: 'Tajuk', border: OutlineInputBorder()),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _descController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                              labelText: 'Penerangan',
+                              border: OutlineInputBorder()),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _bankController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                              labelText: 'No Akaun Bank',
+                              border: OutlineInputBorder()),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _qrUrlController,
+                          decoration: const InputDecoration(
+                              labelText: 'Pautan QR (jika ada)',
+                              border: OutlineInputBorder()),
+                        ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: ElevatedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.image),
+                            label: const Text('Pilih Gambar'),
+                          ),
+                        ),
+                        if (_image != null)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              '✅ Gambar dipilih',
+                              style: TextStyle(color: Colors.green),
+                            ),
+                          ),
+                        const SizedBox(height: 10),
+                        _isUploading
+                            ? const CircularProgressIndicator()
+                            : ElevatedButton.icon(
+                                onPressed: _addDonation,
+                                icon: const Icon(Icons.upload),
+                                label: const Text('Tambah Sumbangan'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(
+                                      255, 135, 172, 79),
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                        const SizedBox(height: 10),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    if (_image != null)
-                      const Text("✅ Gambar dipilih", style: TextStyle(color: Colors.green)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: _isUploading ? null : _addDonation,
-                  child: _isUploading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Tambah Sumbangan"),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
-
           const Divider(),
 
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('suraus')
-                  .doc(_surauId)
-                  .collection('donations')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(child: Text("Ralat memuatkan data."));
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("Tiada sumbangan lagi."));
-                }
+          // 🔹 Donation List
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('suraus')
+                .doc(_surauId)
+                .collection('donations')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(child: Text("Ralat memuatkan data."));
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text("Tiada sumbangan lagi."));
+              }
 
-                final donations = snapshot.data!.docs;
-                return ListView.builder(
-                  itemCount: donations.length,
-                  itemBuilder: (context, index) {
-                    final doc = donations[index];
-                    final data = doc.data() as Map<String, dynamic>;
+              final donations = snapshot.data!.docs;
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: donations.length,
+                itemBuilder: (context, index) {
+                  final doc = donations[index];
+                  final data = doc.data() as Map<String, dynamic>;
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      elevation: 3,
-                      child: ListTile(
-                        leading: data['imageUrl'] != null
-                            ? GestureDetector(
-                                onTap: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => Dialog(
-                                      child: InteractiveViewer(
-                                        child: Image.network(data['imageUrl']),
-                                      ),
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 6),
+                    elevation: 3,
+                    child: ListTile(
+                      leading: data['imageUrl'] != null
+                          ? GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    child: InteractiveViewer(
+                                      child: Image.network(data['imageUrl']),
                                     ),
-                                  );
-                                },
-                                child: Image.network(data['imageUrl'], width: 60, fit: BoxFit.cover),
-                              )
-                            : const Icon(Icons.volunteer_activism, size: 40),
-                        title: Text(data['title'] ?? "Tiada tajuk"),
-                        subtitle: Text("Akaun Bank: ${data['bankAccount'] ?? '-'}"),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _editDonation(doc.id, data),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteDonation(doc.id),
-                            ),
-                          ],
-                        ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(data['imageUrl'],
+                                  width: 60, fit: BoxFit.cover),
+                            )
+                          : const Icon(Icons.volunteer_activism, size: 40),
+                      title: Text(data['title'] ?? "Tiada tajuk"),
+                      subtitle:
+                          Text("Akaun Bank: ${data['bankAccount'] ?? '-'}"),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _editDonation(doc.id, data),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _deleteDonation(doc.id),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),

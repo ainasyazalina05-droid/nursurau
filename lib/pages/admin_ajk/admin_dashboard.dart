@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
 import 'donation_page.dart';
 import 'posting_page.dart';
 import 'surau_details_page.dart';
@@ -14,7 +15,6 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
-
   late final List<Widget> _pages;
 
   @override
@@ -22,14 +22,86 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     _pages = [
       DonationPage(ajkId: widget.ajkId),
-      PostingPage(ajkId: widget.ajkId),  // ✅ no parameter now
+      PostingPage(ajkId: widget.ajkId),
       SurauDetailsPage(ajkId: widget.ajkId),
     ];
+  }
+
+  // ✅ Function to show logout confirmation dialog
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text("Log Keluar"),
+          content: const Text("Adakah anda pasti mahu log keluar?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Cancel
+              child: const Text(
+                "Batal",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _logout(context); // Continue logout
+              },
+              child: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ✅ Function to log out and return to LoginPage
+  void _logout(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
+  // ✅ Dynamic title based on selected tab
+  String get _pageTitle {
+    switch (_currentIndex) {
+      case 0:
+        return "Sumbangan";
+      case 1:
+        return "Hebahan & Post";
+      case 2:
+        return "Maklumat Surau";
+      default:
+        return "Dashboard";
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_pageTitle),
+        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: "Log Keluar",
+            onPressed: () => _showLogoutDialog(context),
+          ),
+        ],
+      ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -40,11 +112,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.volunteer_activism),
-            label: 'Donations',
+            label: 'Sumbangan',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.campaign),
-            label: 'Posts',
+            label: 'Hebahan',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.mosque),
