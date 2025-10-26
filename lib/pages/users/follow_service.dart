@@ -1,47 +1,53 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FollowService {
   static const _key = "followed_suraus";
 
-  /// Load followed surau IDs from local storage
   static Future<List<String>> loadFollowed() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getStringList(_key) ?? [];
-    return data;
+    return prefs.getStringList(_key) ?? [];
   }
 
-  /// Save followed surau IDs
   static Future<void> saveFollowed(List<String> ids) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_key, ids);
   }
 
-  /// Check if a surau is followed
   static Future<bool> isFollowedById(String surauId) async {
     final followed = await loadFollowed();
     return followed.contains(surauId);
   }
 
-  /// Toggle follow/unfollow
+  /// Toggle follow/unfollow AND manage FCM token subscription
   static Future<void> toggleFollowById(String surauId) async {
     final followed = await loadFollowed();
+    final token = await FirebaseMessaging.instance.getToken();
+
+    final surauRef = FirebaseFirestore.instance.collection('suraus').doc(surauId);
+
     if (followed.contains(surauId)) {
       followed.remove(surauId);
+      if (token != null) {
+        await surauRef.update({
+          'followersTokens': FieldValue.arrayRemove([token])
+        });
+      }
     } else {
       followed.add(surauId);
+      if (token != null) {
+        await surauRef.update({
+          'followersTokens': FieldValue.arrayUnion([token])
+        });
+      }
     }
+
     await saveFollowed(followed);
   }
 
-  /// ✅ Added: for compatibility with user feed
+  /// Return followed surau IDs
   static Future<List<String>> getFollowedSurauIds() async {
     return await loadFollowed();
   }
-
-  // (Unused placeholder functions you can safely delete or implement later)
-  static decode(String r) {}
-
-  static Future isFollowedByName(String surauName) async {}
-
-  static Future<void> toggleFollowByName(String surauName, String currentImageUrl) async {}
 }

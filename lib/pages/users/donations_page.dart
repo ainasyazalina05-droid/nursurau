@@ -41,8 +41,8 @@ class _DonationsPageState extends State<DonationsPage> {
       }
 
       allDonations.sort((a, b) {
-        final t1 = (a['dateCreated'] as Timestamp?)?.toDate() ?? DateTime(2000);
-        final t2 = (b['dateCreated'] as Timestamp?)?.toDate() ?? DateTime(2000);
+        final t1 = (a['timestamp'] as Timestamp?)?.toDate() ?? DateTime(2000);
+        final t2 = (b['timestamp'] as Timestamp?)?.toDate() ?? DateTime(2000);
         return t2.compareTo(t1);
       });
 
@@ -120,7 +120,7 @@ class _DonationsPageState extends State<DonationsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              data['name'] ?? 'Tiada Tajuk',
+                              data['title'] ?? 'Tiada Tajuk',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -200,7 +200,7 @@ class _DonationsPageState extends State<DonationsPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                data['name'] ?? 'Maklumat Sumbangan',
+                data['title'] ?? 'Maklumat Sumbangan',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
