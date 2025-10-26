@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart'; // ✅ added
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'surau_details_page.dart';
 import 'donations_page.dart';
 import 'notifications_page.dart';
@@ -15,257 +17,256 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> _followed = [];
-  List<Map<String, dynamic>> _availableSurau = [];
-  List<Map<String, dynamic>> _filteredSurau = [];
-
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  Timer? _debounce;
 
   @override
-void initState() {
-  super.initState();
-  print("✅ HomePage initState called"); // checkpoint 1
-  _loadFollowed();
-  _loadAvailableSuraus();
-
-  _searchController.addListener(() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredSurau = query.isEmpty
-          ? []
-          : _availableSurau
-              .where((s) => (s["name"] ?? "").toLowerCase().contains(query))
-              .toList();
-    });
-  });
-
-  // ✅ delay to allow Firebase initialization fully complete
-  Future.delayed(Duration.zero, () {
-    print("🚀 Calling _setupPushNotifications");
-    _setupPushNotifications();
-  });
-}
-
-Future<void> _setupPushNotifications() async {
-  print("⚙️ setupPushNotifications started");
-  try {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    // Request permission
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    print("🔔 Permission status: ${settings.authorizationStatus}");
-
-    // Get FCM token
-    String? token = await messaging.getToken();
-    print("📱 Device FCM Token: $token");
-
-    // Listen for foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("📩 Notification received!");
-      print("🧾 Title: ${message.notification?.title}");
-      print("🧾 Body: ${message.notification?.body}");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(message.notification?.title ?? 'Notifikasi baru diterima'),
-          ),
-        );
-      }
-    });
-  } catch (e) {
-    print("❌ Error initializing notifications: $e");
-  }
-}
-
-
-  Future<void> _loadAvailableSuraus() async {
-    final snapshot = await FirebaseFirestore.instance.collection('suraus').get();
-    final list = snapshot.docs.map((doc) {
-      final data = doc.data();
-      return {
-        "id": doc.id,
-        "name": data['name'] ?? '',
-        "address": data['address'] ?? '',
-        "image": data['imageUrl'] ?? ''
-      };
-    }).toList();
-    setState(() => _availableSurau = list);
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+    Future.delayed(Duration.zero, _setupPushNotifications);
   }
 
-  Future<void> _loadFollowed() async {
-    final followedIds = await FollowService.loadFollowed();
-    setState(() {
-      _followed = _availableSurau
-          .where((s) => followedIds.contains(s['id']))
-          .toList();
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() {});
     });
   }
 
-  void _openSurauDetails(Map<String, dynamic> surau) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (_) => SurauDetailsPage(surauId: surau["id"])),
-    );
-    _loadFollowed();
-    _searchController.clear();
-    _searchFocus.unfocus();
-    setState(() => _filteredSurau = []);
+  Future<void> _setupPushNotifications() async {
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final token = await messaging.getToken();
+      print("📱 Device Token: $token");
+
+      FirebaseMessaging.onMessage.listen((message) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message.notification?.title ?? "Notifikasi baru diterima")),
+          );
+        }
+      });
+    } catch (e) {
+      print("❌ Notification setup error: $e");
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> _surausStream() {
+    return FirebaseFirestore.instance
+        .collection('suraus')
+        .limit(20) // ✅ Limit for faster initial load
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          "id": doc.id,
+          "name": data['name'] ?? '',
+          "address": data['address'] ?? '',
+          "image": data['imageUrl'] ?? '',
+        };
+      }).toList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEFE5D8),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 🔎 Search Bar
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocus,
-                      decoration: InputDecoration(
-                        hintText: "Cari Surau...",
-                        prefixIcon: const Icon(Icons.search),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
+    final query = _searchController.text.toLowerCase();
 
-                  // 🕌 Followed Suraus
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2F5D50),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "SURAU DIIKUTI:",
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        if (_followed.isEmpty)
-                          const Text("Tiada surau diikuti", style: TextStyle(color: Colors.white))
-                        else
-                          ..._followed.map((s) {
-                            return GestureDetector(
-                              onTap: () => _openSurauDetails(s),
-                              child: Column(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: s['image'] != null && s['image'] != ''
-                                        ? Image.network(s['image'], height: 180, width: double.infinity, fit: BoxFit.cover)
-                                        : Image.asset('assets/surau1.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(s['name'] ?? '', style: const TextStyle(color: Colors.white)),
-                                  const SizedBox(height: 12),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F5F0),
+      body: SafeArea(
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _surausStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+            final suraus = snapshot.data!;
+            final filtered = query.isEmpty
+                ? []
+                : suraus.where((s) => (s['name'] ?? '').toLowerCase().contains(query)).toList();
+
+            return FutureBuilder<List<String>>(
+              future: FollowService.loadFollowed(),
+              builder: (context, followSnap) {
+                if (!followSnap.hasData) return const Center(child: CircularProgressIndicator());
+                final followedIds = followSnap.data!;
+                final followed = suraus.where((s) => followedIds.contains(s['id'])).toList();
+
+                return Stack(
+                  children: [
+                    // 🌿 Main Scroll
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 80),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 🔍 Search Bar
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocus,
+                              decoration: InputDecoration(
+                                hintText: "Cari Surau...",
+                                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: query.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () => _searchController.clear(),
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
+
+                          // 💚 Followed Section
+                          const SectionHeader(title: "Surau Diikuti", icon: Icons.favorite),
+                          if (followed.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text("Tiada surau diikuti.",
+                                  style: TextStyle(color: Colors.grey)),
+                            )
+                          else
+                            SizedBox(
+                              height: 230,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: followed.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                itemBuilder: (context, i) {
+                                  final s = followed[i];
+                                  return SurauCard(
+                                    title: s['name'],
+                                    imagePath: s['image'],
+                                    onTap: () => _openSurauDetails(s),
+                                    isCompact: true,
+                                  );
+                                },
+                              ),
+                            ),
+
+                          // 💝 Donation Banner
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const DonationsPage()),
+                            ),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF8CC6A3), Color(0xFF2F5D50)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black26, blurRadius: 5, offset: Offset(2, 3)),
                                 ],
                               ),
-                            );
-                          }),
-                      ],
-                    ),
-                  ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.volunteer_activism, size: 48, color: Colors.white),
+                                  SizedBox(width: 14),
+                                  Expanded(
+                                    child: Text(
+                                      "Ikhlas Beramal,\nIndah Bersama",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
 
-                  // ❤️ Donation Banner
-                  GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage())),
-                    child: Container(
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8CC6A3),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))
+                          // 🕌 Surau List
+                          const SectionHeader(title: "Senarai Surau", icon: Icons.mosque),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              children: suraus
+                                  .map((s) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 14),
+                                        child: SurauCard(
+                                          title: s['name'],
+                                          imagePath: s['image'],
+                                          onTap: () => _openSurauDetails(s),
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                          ),
                         ],
                       ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.volunteer_activism, size: 40, color: Colors.brown),
-                          SizedBox(width: 12),
-                          Expanded(child: Text("Ikhlas Beramal,\nIndah Bersama", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-                        ],
+                    ),
+
+                    // 🔍 Search Suggestions
+                    if (filtered.isNotEmpty)
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        top: 100,
+                        child: Material(
+                          elevation: 6,
+                          borderRadius: BorderRadius.circular(12),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: filtered.length,
+                            itemBuilder: (context, i) {
+                              final s = filtered[i];
+                              return ListTile(
+                                leading: s['image'] != ''
+                                    ? CircleAvatar(backgroundImage: NetworkImage(s['image']))
+                                    : const CircleAvatar(child: Icon(Icons.mosque)),
+                                title: Text(s['name']),
+                                onTap: () => _openSurauDetails(s),
+                              );
+                            },
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-
-                  // 🕌 Available Suraus
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text("SURAU TERSEDIA:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 12),
-                        ..._availableSurau.map((s) => SurauCard(
-                              title: s['name'] ?? '',
-                              imagePath: s['image'] ?? '',
-                              onTap: () => _openSurauDetails(s),
-                            )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // 🔎 Search suggestions overlay
-          if (_filteredSurau.isNotEmpty)
-            Positioned(
-              left: 16,
-              right: 16,
-              top: 90,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(12),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _filteredSurau.length,
-                  itemBuilder: (context, index) {
-                    final s = _filteredSurau[index];
-                    return ListTile(
-                      leading: s['image'] != '' ? CircleAvatar(backgroundImage: NetworkImage(s['image'])) : null,
-                      title: Text(s['name'] ?? ''),
-                      onTap: () => _openSurauDetails(s),
-                    );
-                  },
-                ),
-              ),
-            ),
-        ],
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
 
+      // 🧭 Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFFF5E2B8),
+        backgroundColor: Colors.white,
         currentIndex: 1,
         selectedItemColor: const Color(0xFF2F5D50),
-        unselectedItemColor: Colors.black87,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           if (index == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
           if (index == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage()));
@@ -280,40 +281,105 @@ Future<void> _setupPushNotifications() async {
       ),
     );
   }
+
+  void _openSurauDetails(Map<String, dynamic> surau) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SurauDetailsPage(surauId: surau["id"])),
+    );
+    setState(() {});
+    _searchController.clear();
+    _searchFocus.unfocus();
+  }
 }
 
-// 🔹 SurauCard reusable widget
+// 🌙 Section Header
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const SectionHeader({super.key, required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF2F5D50)),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2F5D50),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 🕌 Modern Surau Card
 class SurauCard extends StatelessWidget {
   final String title;
   final String imagePath;
   final VoidCallback onTap;
+  final bool isCompact;
 
-  const SurauCard({super.key, required this.title, required this.imagePath, required this.onTap});
+  const SurauCard({
+    super.key,
+    required this.title,
+    required this.imagePath,
+    required this.onTap,
+    this.isCompact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5E2B8),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
-      ),
-      child: Column(
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: onTap,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: imagePath != '' && (imagePath.startsWith('http') || imagePath.startsWith('https'))
-                  ? Image.network(imagePath, height: 180, width: double.infinity, fit: BoxFit.cover)
-                  : Image.asset('assets/surau1.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          alignment: Alignment.bottomLeft,
+          children: [
+            CachedNetworkImage(
+              imageUrl: imagePath.isNotEmpty ? imagePath : 'https://via.placeholder.com/400x200',
+              height: isCompact ? 200 : 220,
+              width: isCompact ? 280 : double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
+              errorWidget: (_, __, ___) => const Icon(Icons.error),
             ),
-          ),
-        ],
+            Container(
+              height: 80,
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.black54, Colors.transparent],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
