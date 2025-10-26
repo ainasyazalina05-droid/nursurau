@@ -15,29 +15,38 @@ class FollowService {
     await prefs.setStringList(_key, ids);
   }
 
-  static Future<bool> isFollowedById(String surauId) async {
+  static Future<bool> isFollowedById(String ajkId) async {
     final followed = await loadFollowed();
-    return followed.contains(surauId);
+    return followed.contains(ajkId);
   }
 
-  /// Toggle follow/unfollow AND manage FCM token subscription
-  static Future<void> toggleFollowById(String surauId) async {
+  /// ✅ Fixed: Toggle follow/unfollow and update Firestore correctly
+  static Future<void> toggleFollowById(String ajkId) async {
     final followed = await loadFollowed();
     final token = await FirebaseMessaging.instance.getToken();
 
-    final surauRef = FirebaseFirestore.instance.collection('suraus').doc(surauId);
+    // Find the surau document by ajkId field
+    final query = await FirebaseFirestore.instance
+        .collection('suraus')
+        .where('ajkId', isEqualTo: ajkId)
+        .limit(1)
+        .get();
 
-    if (followed.contains(surauId)) {
-      followed.remove(surauId);
+    if (query.docs.isEmpty) return;
+
+    final surauDoc = query.docs.first.reference;
+
+    if (followed.contains(ajkId)) {
+      followed.remove(ajkId);
       if (token != null) {
-        await surauRef.update({
+        await surauDoc.update({
           'followersTokens': FieldValue.arrayRemove([token])
         });
       }
     } else {
-      followed.add(surauId);
+      followed.add(ajkId);
       if (token != null) {
-        await surauRef.update({
+        await surauDoc.update({
           'followersTokens': FieldValue.arrayUnion([token])
         });
       }
@@ -46,7 +55,6 @@ class FollowService {
     await saveFollowed(followed);
   }
 
-  /// Return followed surau IDs
   static Future<List<String>> getFollowedSurauIds() async {
     return await loadFollowed();
   }
