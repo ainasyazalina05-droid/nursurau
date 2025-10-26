@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_dashboard.dart';
+import 'registration_form.dart'; // ✅ Make sure this file name matches yours
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -28,7 +29,8 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      final docRef = FirebaseFirestore.instance.collection('ajk_users').doc(username);
+      final docRef =
+          FirebaseFirestore.instance.collection('ajk_users').doc(username);
       final snapshot = await docRef.get();
 
       if (snapshot.exists) {
@@ -74,7 +76,8 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mosque, size: 80, color: Color.fromARGB(255, 135, 172, 79)),
+              const Icon(Icons.mosque,
+                  size: 80, color: Color.fromARGB(255, 135, 172, 79)),
               const SizedBox(height: 20),
               const Text(
                 "Portal AJK Surau",
@@ -104,11 +107,14 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 30),
+
+              // ✅ Login button
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+                        backgroundColor:
+                            const Color.fromARGB(255, 135, 172, 79),
                         minimumSize: const Size(double.infinity, 48),
                       ),
                       onPressed: _login,
@@ -117,6 +123,28 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
+
+              const SizedBox(height: 20),
+
+              // ✅ Register navigation text button
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RegisterForm(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Belum ada akaun? Daftar di sini",
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 135, 172, 79),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
