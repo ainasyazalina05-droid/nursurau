@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class FollowService {
   static const _key = "followed_suraus";
@@ -34,6 +33,12 @@ class FollowService {
     await saveFollowed(followed);
   }
 
+  /// ✅ Added: for compatibility with user feed
+  static Future<List<String>> getFollowedSurauIds() async {
+    return await loadFollowed();
+  }
+
+  // (Unused placeholder functions you can safely delete or implement later)
   static decode(String r) {}
 
   static Future isFollowedByName(String surauName) async {}

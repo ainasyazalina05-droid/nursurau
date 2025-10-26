@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class DonationPage extends StatefulWidget {
   final String ajkId;
@@ -14,15 +14,14 @@ class DonationPage extends StatefulWidget {
 }
 
 class _DonationPageState extends State<DonationPage> {
-  String? _surauId;
-  bool _isLoading = true;
-
-  final _nameController = TextEditingController();
-  final _descController = TextEditingController();
-  final _bankController = TextEditingController();
-  final _qrController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+  final TextEditingController _bankController = TextEditingController();
+  final TextEditingController _qrUrlController = TextEditingController();
 
   File? _image;
+  String? _surauId;
+  bool _isLoading = true;
   bool _isUploading = false;
 
   @override
@@ -33,80 +32,95 @@ class _DonationPageState extends State<DonationPage> {
 
   Future<void> _getSurauId() async {
     try {
-      final query = await FirebaseFirestore.instance
+      final snapshot = await FirebaseFirestore.instance
           .collection('suraus')
           .where('ajkId', isEqualTo: widget.ajkId)
           .limit(1)
           .get();
 
-      if (query.docs.isNotEmpty) {
-        setState(() => _surauId = query.docs.first.id);
+      if (snapshot.docs.isNotEmpty) {
+        _surauId = snapshot.docs.first.id;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Tiada surau dijumpai untuk AJK ini.")),
-        );
+        _surauId = null;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat memuat data: $e")),
-      );
+      debugPrint("Error fetching surauId: $e");
     } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
 
-  // 📸 Pick image from gallery
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _image = File(picked.path));
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() => _image = File(pickedFile.path));
     }
   }
 
-  // ☁️ Upload image to Cloudinary
-  Future<String?> _uploadToCloudinary(File image) async {
-    const cloudName = 'dvrws03cg'; // ganti dengan cloud name kamu
-    const uploadPreset = 'unsigned_preset'; // ganti dengan preset
+  Future<String?> _uploadToCloudinary(File imageFile) async {
+    const cloudName = 'dvrws03cg';
+    const uploadPreset = 'unsigned_preset';
 
-    final url =
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
-    final request = http.MultipartRequest('POST', url)
+    final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final request = http.MultipartRequest('POST', uri)
       ..fields['upload_preset'] = uploadPreset
-      ..files.add(await http.MultipartFile.fromPath('file', image.path));
+      ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
-    final response = await request.send();
-    final responseData = await response.stream.bytesToString();
-
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(responseData);
-      return jsonData['secure_url'];
-    } else {
-      debugPrint('Upload failed: ${response.reasonPhrase}');
-      return null;
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final data = jsonDecode(await response.stream.bytesToString());
+        return data['secure_url'];
+      } else {
+        debugPrint("Cloudinary upload failed: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Cloudinary error: $e");
     }
+    return null;
   }
 
   Future<void> _addDonation() async {
-    if (_surauId == null) return;
+    if (_surauId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ralat: Surau tidak dijumpai.")),
+      );
+      return;
+    }
 
-    final name = _nameController.text.trim();
+    final title = _titleController.text.trim();
     final desc = _descController.text.trim();
     final bank = _bankController.text.trim();
-    final qrUrl = _qrController.text.trim();
+    final qrUrl = _qrUrlController.text.trim();
 
-    if (name.isEmpty || desc.isEmpty || bank.isEmpty || qrUrl.isEmpty) {
+    if (title.isEmpty || desc.isEmpty || bank.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sila isi semua ruangan.")),
+        const SnackBar(content: Text("Sila isi semua maklumat.")),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^\d+$').hasMatch(bank)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No akaun mesti nombor sah.")),
       );
       return;
     }
 
     setState(() => _isUploading = true);
-    String? imageUrl;
 
+    String? imageUrl;
     if (_image != null) {
       imageUrl = await _uploadToCloudinary(_image!);
+      if (imageUrl == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Gagal muat naik gambar.")),
+        );
+        if (!mounted) return;
+        setState(() => _isUploading = false);
+        return;
+      }
     }
 
     try {
@@ -115,49 +129,48 @@ class _DonationPageState extends State<DonationPage> {
           .doc(_surauId)
           .collection('donations')
           .add({
-        'name': name,
+        'title': title,
         'description': desc,
-        'bankAccount': bank,
+        'bankAccount': bank, // ✅ matches user page
         'qrUrl': qrUrl,
-        'imageUrl': imageUrl ?? '',
-        'createdBy': widget.ajkId,
-        'dateCreated': FieldValue.serverTimestamp(),
+        'imageUrl': imageUrl,
+        'timestamp': FieldValue.serverTimestamp(),
       });
 
-      _nameController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sumbangan berjaya ditambah!")),
+      );
+
+      _titleController.clear();
       _descController.clear();
       _bankController.clear();
-      _qrController.clear();
+      _qrUrlController.clear();
       setState(() => _image = null);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Derma baru ditambah!")),
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat menambah derma: $e")),
+        SnackBar(content: Text("Ralat menambah sumbangan: $e")),
       );
     } finally {
+      if (!mounted) return;
       setState(() => _isUploading = false);
     }
   }
 
-  Future<void> _deleteDonation(String id) async {
-    if (_surauId == null) return;
+  Future<void> _deleteDonation(String donationId) async {
     try {
       await FirebaseFirestore.instance
           .collection('suraus')
           .doc(_surauId)
           .collection('donations')
-          .doc(id)
+          .doc(donationId)
           .delete();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Derma dipadam.")),
+        const SnackBar(content: Text("Sumbangan berjaya dipadam.")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat memadam derma: $e")),
+        SnackBar(content: Text("Ralat memadam sumbangan: $e")),
       );
     }
   }
@@ -165,195 +178,129 @@ class _DonationPageState extends State<DonationPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_surauId == null) {
+      return const Center(child: Text("Tiada surau dijumpai untuk AJK ini."));
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Derma Surau", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
-        centerTitle: true,
+        title: const Text("Sumbangan Surau"),
+        backgroundColor: Colors.green.shade700,
       ),
-      body: _surauId == null
-          ? const Center(child: Text("Tiada surau dijumpai."))
-          : Column(
+      body: Column(
+        children: [
+          // --- Form Section ---
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
               children: [
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('suraus')
-                        .doc(_surauId)
-                        .collection('donations')
-                        .orderBy('dateCreated', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const Center(
-                            child: CircularProgressIndicator());
-                      }
-
-                      if (!snapshot.hasData ||
-                          snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Text("Tiada derma lagi."));
-                      }
-
-                      final donations = snapshot.data!.docs;
-
-                      return ListView.builder(
-                        itemCount: donations.length,
-                        itemBuilder: (context, index) {
-                          final data =
-                              donations[index].data() as Map<String, dynamic>;
-                          final docId = donations[index].id;
-
-                          return Card(
-                            margin: const EdgeInsets.all(10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              leading: data['imageUrl'] != null &&
-                                      (data['imageUrl'] as String).isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        data['imageUrl'],
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : const Icon(Icons.image, size: 50),
-                              title: Text(data['name'] ?? ''),
-                              subtitle: Text(data['description'] ?? ''),
-                              trailing: IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteDonation(docId),
-                              ),
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: Text(data['name']),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text("Akaun: ${data['bankAccount']}"),
-                                        const SizedBox(height: 10),
-                                        Image.network(
-                                          data['qrUrl'] ?? '',
-                                          height: 150,
-                                          errorBuilder:
-                                              (context, _, __) => const Icon(
-                                            Icons.qr_code,
-                                            size: 80,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        if (data['imageUrl'] != null &&
-                                            (data['imageUrl'] as String)
-                                                .isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 10),
-                                            child: Image.network(
-                                              data['imageUrl'],
-                                              height: 150,
-                                              errorBuilder: (context, _, __) =>
-                                                  const Icon(
-                                                Icons.image,
-                                                size: 80,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: "Tajuk"),
                 ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ExpansionTile(
-                    title: const Text("Tambah Derma Baru"),
-                    children: [
-                      TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: "Nama Derma",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _descController,
-                        decoration: const InputDecoration(
-                          labelText: "Penerangan",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _bankController,
-                        decoration: const InputDecoration(
-                          labelText: "No Akaun Bank",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _qrController,
-                        decoration: const InputDecoration(
-                          labelText: "Pautan QR (URL)",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _pickImage,
-                            icon: const Icon(Icons.image),
-                            label: const Text("Pilih Gambar"),
-                          ),
-                          const SizedBox(width: 10),
-                          if (_image != null)
-                            Text(
-                              "✅ Gambar dipilih",
-                              style: TextStyle(color: Colors.green[700]),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _isUploading
-                          ? const CircularProgressIndicator()
-                          : ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                    255, 135, 172, 79),
-                                minimumSize: const Size(double.infinity, 45),
-                              ),
-                              onPressed: _addDonation,
-                              icon: const Icon(Icons.add, color: Colors.white),
-                              label: const Text("Tambah",
-                                  style: TextStyle(color: Colors.white)),
-                            ),
-                    ],
-                  ),
+                TextField(
+                  controller: _descController,
+                  decoration: const InputDecoration(labelText: "Penerangan"),
+                ),
+                TextField(
+                  controller: _bankController,
+                  decoration: const InputDecoration(labelText: "No Akaun Bank"),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: _qrUrlController,
+                  decoration: const InputDecoration(labelText: "Pautan QR (jika ada)"),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.image),
+                      label: const Text("Pilih Gambar"),
+                    ),
+                    const SizedBox(width: 10),
+                    if (_image != null)
+                      const Text("✅ Gambar dipilih", style: TextStyle(color: Colors.green)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: _isUploading ? null : _addDonation,
+                  child: _isUploading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Tambah Sumbangan"),
                 ),
               ],
             ),
+          ),
+
+          const Divider(),
+
+          // --- Donations List ---
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('suraus')
+                  .doc(_surauId)
+                  .collection('donations')
+                  .orderBy('timestamp', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text("Ralat memuatkan data."));
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("Tiada sumbangan lagi."));
+                }
+
+                final donations = snapshot.data!.docs;
+                return ListView.builder(
+                  itemCount: donations.length,
+                  itemBuilder: (context, index) {
+                    final doc = donations[index];
+                    final data = doc.data() as Map<String, dynamic>;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      elevation: 3,
+                      child: ListTile(
+                        leading: data['imageUrl'] != null
+                            ? GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => Dialog(
+                                      child: InteractiveViewer(
+                                        child: Image.network(data['imageUrl']),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.network(data['imageUrl'], width: 60, fit: BoxFit.cover),
+                              )
+                            : const Icon(Icons.volunteer_activism, size: 40),
+                        title: Text(data['title'] ?? "Tiada tajuk"),
+                        subtitle: Text("Akaun Bank: ${data['bankAccount'] ?? '-'}"),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteDonation(doc.id),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
