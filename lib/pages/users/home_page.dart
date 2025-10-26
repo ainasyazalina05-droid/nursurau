@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart'; // ✅ added
 import 'surau_details_page.dart';
 import 'donations_page.dart';
 import 'notifications_page.dart';
@@ -22,22 +23,66 @@ class _HomePageState extends State<HomePage> {
   final FocusNode _searchFocus = FocusNode();
 
   @override
-  void initState() {
-    super.initState();
-    _loadFollowed();
-    _loadAvailableSuraus();
+void initState() {
+  super.initState();
+  print("✅ HomePage initState called"); // checkpoint 1
+  _loadFollowed();
+  _loadAvailableSuraus();
 
-    _searchController.addListener(() {
-      final query = _searchController.text.toLowerCase();
-      setState(() {
-        _filteredSurau = query.isEmpty
-            ? []
-            : _availableSurau
-                .where((s) => (s["name"] ?? "").toLowerCase().contains(query))
-                .toList();
-      });
+  _searchController.addListener(() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredSurau = query.isEmpty
+          ? []
+          : _availableSurau
+              .where((s) => (s["name"] ?? "").toLowerCase().contains(query))
+              .toList();
     });
+  });
+
+  // ✅ delay to allow Firebase initialization fully complete
+  Future.delayed(Duration.zero, () {
+    print("🚀 Calling _setupPushNotifications");
+    _setupPushNotifications();
+  });
+}
+
+Future<void> _setupPushNotifications() async {
+  print("⚙️ setupPushNotifications started");
+  try {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // Request permission
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    print("🔔 Permission status: ${settings.authorizationStatus}");
+
+    // Get FCM token
+    String? token = await messaging.getToken();
+    print("📱 Device FCM Token: $token");
+
+    // Listen for foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("📩 Notification received!");
+      print("🧾 Title: ${message.notification?.title}");
+      print("🧾 Body: ${message.notification?.body}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text(message.notification?.title ?? 'Notifikasi baru diterima'),
+          ),
+        );
+      }
+    });
+  } catch (e) {
+    print("❌ Error initializing notifications: $e");
   }
+}
+
 
   Future<void> _loadAvailableSuraus() async {
     final snapshot = await FirebaseFirestore.instance.collection('suraus').get();

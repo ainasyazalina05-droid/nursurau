@@ -6,7 +6,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class PostingPage extends StatefulWidget {
-  const PostingPage({super.key});
+  final String ajkId; // 🔹 AJK ID diterima dari halaman log masuk atau profil
+  const PostingPage({super.key, required this.ajkId});
 
   @override
   State<PostingPage> createState() => _PostingPageState();
@@ -78,6 +79,7 @@ class _PostingPageState extends State<PostingPage> {
     }
 
     await _firestore.collection('posts').add({
+      'ajkId': widget.ajkId, // 🔹 Simpan ID AJK
       'title': _titleController.text,
       'description': _descController.text,
       'category': _selectedCategory,
@@ -120,23 +122,31 @@ class _PostingPageState extends State<PostingPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
+
             StreamBuilder<QuerySnapshot>(
               stream: _firestore
                   .collection('posts')
-                  .orderBy('timestamp', descending: true)
+                  .where('ajkId', isEqualTo: widget.ajkId)
+                  // .orderBy('timestamp', descending: true) // ❌ remove for now
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return const Text('Ralat memuatkan data.');
+                  debugPrint('🔥 Firestore error: ${snapshot.error}');
+                  return Text(
+                    'Ralat memuatkan data:\n${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  );
                 }
-                if (!snapshot.hasData) {
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final posts = snapshot.data!.docs;
-                if (posts.isEmpty) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Text('Tiada posting buat masa ini.');
                 }
+
+                final posts = snapshot.data!.docs;
 
                 return ListView.builder(
                   shrinkWrap: true,
