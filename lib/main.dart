@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.green),
 
       // ✅ Keep your existing page setup
-      home: LoginPage(), // Admin AJK login
+       home: LoginPage(), // Admin AJK login
       // home: const HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat admin
     );

@@ -131,7 +131,7 @@ class _DonationPageState extends State<DonationPage> {
           .add({
         'title': title,
         'description': desc,
-        'bankAccount': bank, // ✅ matches user page
+        'bankAccount': bank,
         'qrUrl': qrUrl,
         'imageUrl': imageUrl,
         'timestamp': FieldValue.serverTimestamp(),
@@ -154,6 +154,99 @@ class _DonationPageState extends State<DonationPage> {
       if (!mounted) return;
       setState(() => _isUploading = false);
     }
+  }
+
+  Future<void> _updateDonation(String donationId) async {
+    if (_surauId == null) return;
+
+    setState(() => _isUploading = true);
+
+    String? imageUrl;
+    if (_image != null) {
+      imageUrl = await _uploadToCloudinary(_image!);
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('suraus')
+          .doc(_surauId)
+          .collection('donations')
+          .doc(donationId)
+          .update({
+        'title': _titleController.text.trim(),
+        'description': _descController.text.trim(),
+        'bankAccount': _bankController.text.trim(),
+        'qrUrl': _qrUrlController.text.trim(),
+        if (imageUrl != null) 'imageUrl': imageUrl,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Sumbangan berjaya dikemaskini!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ralat: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _editDonation(String donationId, Map<String, dynamic> data) {
+    _titleController.text = data['title'] ?? '';
+    _descController.text = data['description'] ?? '';
+    _bankController.text = data['bankAccount'] ?? '';
+    _qrUrlController.text = data['qrUrl'] ?? '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Kemaskini Sumbangan"),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: "Tajuk"),
+                ),
+                TextField(
+                  controller: _descController,
+                  decoration: const InputDecoration(labelText: "Penerangan"),
+                ),
+                TextField(
+                  controller: _bankController,
+                  decoration: const InputDecoration(labelText: "No Akaun Bank"),
+                ),
+                TextField(
+                  controller: _qrUrlController,
+                  decoration: const InputDecoration(labelText: "Pautan QR"),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.image),
+                  label: const Text("Tukar Gambar (jika perlu)"),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _updateDonation(donationId);
+              },
+              child: const Text("Simpan"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _deleteDonation(String donationId) async {
@@ -192,7 +285,6 @@ class _DonationPageState extends State<DonationPage> {
       ),
       body: Column(
         children: [
-          // --- Form Section ---
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -240,7 +332,6 @@ class _DonationPageState extends State<DonationPage> {
 
           const Divider(),
 
-          // --- Donations List ---
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -288,9 +379,18 @@ class _DonationPageState extends State<DonationPage> {
                             : const Icon(Icons.volunteer_activism, size: 40),
                         title: Text(data['title'] ?? "Tiada tajuk"),
                         subtitle: Text("Akaun Bank: ${data['bankAccount'] ?? '-'}"),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deleteDonation(doc.id),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _editDonation(doc.id, data),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteDonation(doc.id),
+                            ),
+                          ],
                         ),
                       ),
                     );
