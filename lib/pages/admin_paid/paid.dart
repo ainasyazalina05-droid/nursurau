@@ -40,7 +40,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // ✅ Dropdown filter
+            // Dropdown filter
             DropdownButton<String>(
               value: selectedStatus,
               items: ['All', 'Pending', 'Approved', 'Rejected']
@@ -55,9 +55,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                 });
               },
             ),
-
             const SizedBox(height: 10),
-
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: selectedStatus == "All"
@@ -82,12 +80,10 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                   return ListView.builder(
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
-                      var data =
-                          docs[index].data() as Map<String, dynamic>;
+                      var data = docs[index].data() as Map<String, dynamic>;
                       var docId = docs[index].id;
-                      var status = (data["status"] ?? "pending")
-                          .toString()
-                          .toLowerCase();
+                      var status =
+                          (data["status"] ?? "pending").toString().toLowerCase();
 
                       return FutureBuilder<String>(
                         future: _getAjkName(docId),
@@ -96,44 +92,56 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
 
                           return Card(
                             child: ListTile(
-                              leading: const Icon(Icons.mosque,
-                                  color: Color(0xFF2E7D32)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              leading: Icon(
+                                status == "approved"
+                                    ? Icons.mosque
+                                    : Icons.pending_actions,
+                                color: const Color(0xFF2E7D32),
+                                size: 30,
+                              ),
                               title: Text(
                                 data["surauName"] ?? "No name",
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                  fontSize: 16,
+                                ),
                               ),
                               subtitle: Text("AJK: $ajkName"),
                               trailing: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      const Color(0xFF2E7D32),
+                                  backgroundColor: const Color(0xFF2E7D32),
                                 ),
                                 child: Text(
                                   status == "approved"
                                       ? "View Details"
                                       : "Manage",
-                                  style:
-                                      const TextStyle(color: Colors.white),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
-                                onPressed: () {
-  if (status == "approved") {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SurauDetailsPage(ajkId: docId),
-      ),
-    );
-  } else {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ManageSurauPage(docId: docId),
-      ),
-    );
-  }
-}
-,
+                                onPressed: () async {
+                                  if (status == "approved") {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            SurauDetailsPage(ajkId: docId),
+                                      ),
+                                    );
+                                  } else {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ManageSurauPage(docId: docId),
+                                      ),
+                                    );
+                                    if (result == true) {
+                                      // StreamBuilder auto-refreshes
+                                    }
+                                  }
+                                },
                               ),
                             ),
                           );

@@ -167,11 +167,15 @@ class _PostingPageState extends State<PostingPage> {
                   ),
                 ),
                 if (_image != null)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      '✅ Gambar dipilih',
-                      style: TextStyle(color: Colors.green),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        _image!,
+                        height: 150,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
               ],
@@ -208,10 +212,8 @@ class _PostingPageState extends State<PostingPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text("Padam"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
           ),
         ],
       ),
@@ -272,23 +274,50 @@ class _PostingPageState extends State<PostingPage> {
                               (c) => DropdownMenuItem(value: c, child: Text(c)))
                           .toList(),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
+
+                    // 🖼️ Friendlier Web Upload Section
                     Center(
-                      child: ElevatedButton.icon(
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.image),
-                        label: const Text('Pilih Gambar'),
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              height: 180,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey[100],
+                              ),
+                              child: _image == null
+                                  ? const Center(
+                                      child: Text(
+                                        'Klik di sini untuk pilih gambar',
+                                        style: TextStyle(color: Colors.black54),
+                                      ),
+                                    )
+                                  : ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.file(
+                                        _image!,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.image),
+                            label: const Text('Pilih Gambar'),
+                          ),
+                        ],
                       ),
                     ),
-                    if (_image != null)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          '✅ Gambar dipilih',
-                          style: TextStyle(color: Colors.green),
-                        ),
-                      ),
-                    const SizedBox(height: 10),
+
+                    const SizedBox(height: 20),
                     _isUploading
                         ? const CircularProgressIndicator()
                         : ElevatedButton.icon(
@@ -299,6 +328,8 @@ class _PostingPageState extends State<PostingPage> {
                               backgroundColor:
                                   const Color.fromARGB(255, 135, 172, 79),
                               foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 25),
                             ),
                           ),
                     const SizedBox(height: 10),
