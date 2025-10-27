@@ -11,107 +11,101 @@ class ManageUsersPage extends StatefulWidget {
 class _ManageUsersPageState extends State<ManageUsersPage> {
   final Color themeColor = const Color.fromARGB(255, 135, 172, 79);
 
-  // ✅ Function to update user role
-  Future<void> updateRole(String userId, String newRole) async {
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'role': newRole,
-      });
+  // ✅ Update Role
+  Future<void> updateRole(String username, String newRole) async {
+    await FirebaseFirestore.instance.collection('ajk_users').doc(username).update({
+      'role': newRole,
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Role pengguna dikemas kini kepada $newRole")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat mengemas kini role: $e")),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Role ditukar ke $newRole ✅")),
+    );
   }
 
-  // ✅ Function to delete user document
-  Future<void> deleteUser(String userId) async {
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+  // ✅ Update Status
+  Future<void> updateStatus(String username, String newStatus) async {
+    await FirebaseFirestore.instance.collection('ajk_users').doc(username).update({
+      'status': newStatus,
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pengguna berjaya dipadam.")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat memadam pengguna: $e")),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Status: $newStatus ✅")),
+    );
+  }
+
+  // ✅ Delete user
+  Future<void> deleteUser(String username) async {
+    await FirebaseFirestore.instance.collection('ajk_users').doc(username).delete();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Pengguna dipadam ✅")),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin - Manage Users"),
+        title: const Text("Manage AJK Users"),
         backgroundColor: themeColor,
       ),
 
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').snapshots(),
+        stream: FirebaseFirestore.instance.collection('ajk_users').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Text("Ralat memuat data pengguna."));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
           final users = snapshot.data!.docs;
 
           return ListView.builder(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             itemCount: users.length,
             itemBuilder: (context, index) {
-              var user = users[index];
-              String userId = user.id;
-              String name = user['name'] ?? 'Tiada Nama';
-              String email = user['email'] ?? '-';
-              String role = user['role'] ?? 'normal';
+              var doc = users[index];
+              var data = doc.data() as Map<String, dynamic>;
+
+              String username = doc.id; // ✅ document ID = username
+              String role = data['role'] ?? 'ajk';
+              String status = data['status'] ?? 'pending';
+              String surauName = data['surauName'] ?? '-';
 
               return Card(
-                elevation: 4,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                elevation: 5,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 child: ListTile(
                   leading: const CircleAvatar(
+                    backgroundColor: Colors.green,
                     child: Icon(Icons.person, color: Colors.white),
-                    backgroundColor: Color.fromARGB(255, 135, 172, 79),
                   ),
-                  title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(email),
+
+                  title: Text(username, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text("Role: $role\nSurau: $surauName"),
+
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) {
                       if (value == 'delete') {
-                        deleteUser(userId);
+                        deleteUser(username);
+                      } else if (value == 'approve' || value == 'reject') {
+                        updateStatus(username, value);
                       } else {
-                        updateRole(userId, value);
+                        updateRole(username, value);
                       }
                     },
                     itemBuilder: (context) => [
+                      const PopupMenuItem(value: 'ajk', child: Text("Jadikan AJK")),
+                      const PopupMenuItem(value: 'admin_paid', child: Text("Jadikan Admin PAID")),
+                      const PopupMenuItem(value: 'blocked', child: Text("Sekat Pengguna")),
+                      const PopupMenuDivider(),
                       const PopupMenuItem(
-                        value: 'normal',
-                        child: Text("Jadikan Normal User"),
-                      ),
+                          value: 'approve',
+                          child: Text("Approve ✅", style: TextStyle(color: Colors.green))),
                       const PopupMenuItem(
-                        value: 'ajk',
-                        child: Text("Jadikan AJK"),
-                      ),
-                      const PopupMenuItem(
-                        value: 'admin_paid',
-                        child: Text("Jadikan Admin PAID"),
-                      ),
+                          value: 'reject',
+                          child: Text("Reject ❌", style: TextStyle(color: Colors.red))),
+                      const PopupMenuDivider(),
                       const PopupMenuItem(
                         value: 'delete',
-                        child: Text(
-                          "Padam Pengguna",
-                          style: TextStyle(color: Colors.red),
-                        ),
+                        child: Text("Padam Pengguna", style: TextStyle(color: Colors.red)),
                       ),
                     ],
                   ),
