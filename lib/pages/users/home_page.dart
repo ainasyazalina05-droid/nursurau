@@ -5,7 +5,8 @@ import 'surau_details_page.dart';
 import 'donations_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
-import 'follow_service.dart';
+import 'package:nursurau/services/follow_service.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -87,7 +88,7 @@ class _HomePageState extends State<HomePage> {
         if (followedIds.contains(surauId)) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const NotificationsPage()),
+            MaterialPageRoute(builder: (_) => NotificationsPage()),
           );
         }
       });
@@ -272,7 +273,7 @@ class _HomePageState extends State<HomePage> {
         unselectedItemColor: Colors.black87,
         onTap: (index) {
           setState(() => _currentIndex = index);
-          if (index == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
+          if (index == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsPage()));
           if (index == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage()));
           if (index == 3) Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage()));
         },

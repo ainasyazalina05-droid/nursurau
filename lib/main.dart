@@ -39,13 +39,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.green),
 
       // ✅ Keep your existing page setup
-<<<<<<< HEAD
-      // home: LoginPage(), // Admin AJK login
+       //home: LoginPage(), // Admin AJK login
       home: const HomePage(), // User
-=======
-       home: LoginPage(), // Admin AJK login
-      // home: const HomePage(), // User
->>>>>>> ee1e279350e54636927f7cc08fdf3f10540af7fb
       // home: const AdminPaidPage(), // Pejabat admin
     );
   }

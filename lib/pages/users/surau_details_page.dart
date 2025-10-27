@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'follow_service.dart';
+import 'package:nursurau/services/follow_service.dart';
+
 
 class SurauDetailsPage extends StatefulWidget {
   final String ajkId; // 🔹 AJK ID digunakan untuk filter posting
