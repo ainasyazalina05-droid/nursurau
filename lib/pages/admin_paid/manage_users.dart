@@ -9,7 +9,7 @@ class ManageUsersPage extends StatefulWidget {
 }
 
 class _ManageUsersPageState extends State<ManageUsersPage> {
-  final Color themeColor = const Color.fromARGB(255, 135, 172, 79);
+  final Color themeColor = const Color(0xFF2E7D32); // unified with PAID Dashboard theme
 
   // ✅ Function to update user role
   Future<void> updateRole(String userId, String newRole) async {
@@ -19,26 +19,38 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Role pengguna dikemas kini kepada $newRole")),
+        SnackBar(
+          content: Text("Peranan pengguna dikemas kini kepada $newRole."),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat mengemas kini role: $e")),
+        SnackBar(
+          content: Text("Ralat mengemas kini peranan: $e"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  // ✅ Function to delete user document
+  // ✅ Function to delete user
   Future<void> deleteUser(String userId) async {
     try {
       await FirebaseFirestore.instance.collection('users').doc(userId).delete();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pengguna berjaya dipadam.")),
+        const SnackBar(
+          content: Text("Pengguna berjaya dipadam."),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat memadam pengguna: $e")),
+        SnackBar(
+          content: Text("Ralat memadam pengguna: $e"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -47,48 +59,64 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin - Manage Users"),
+        title: const Text("Admin - Pengurusan Pengguna"),
         backgroundColor: themeColor,
       ),
-
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('users').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text("Ralat memuat data pengguna."));
           }
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final users = snapshot.data!.docs;
 
+          if (users.isEmpty) {
+            return const Center(
+              child: Text(
+                "Tiada pengguna dijumpai.",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            );
+          }
+
           return ListView.builder(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             itemCount: users.length,
             itemBuilder: (context, index) {
-              var user = users[index];
-              String userId = user.id;
-              String name = user['name'] ?? 'Tiada Nama';
-              String email = user['email'] ?? '-';
-              String role = user['role'] ?? 'normal';
+              final user = users[index];
+              final userId = user.id;
+              final name = user['name'] ?? 'Tiada Nama';
+              final email = user['email'] ?? '-';
+              final role = user['role'] ?? 'normal';
 
               return Card(
-                elevation: 4,
+                elevation: 3,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.person, color: Colors.white),
-                    backgroundColor: Color.fromARGB(255, 135, 172, 79),
+                  leading: CircleAvatar(
+                    backgroundColor: themeColor,
+                    child: const Icon(Icons.person, color: Colors.white),
                   ),
-                  title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(email),
+                  title: Text(
+                    name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text("$email\nPeranan: $role"),
+                  isThreeLine: true,
                   trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
+                    onSelected: (value) async {
                       if (value == 'delete') {
-                        deleteUser(userId);
+                        final confirm = await _confirmDelete(context, name);
+                        if (confirm) deleteUser(userId);
                       } else {
                         updateRole(userId, value);
                       }
@@ -106,6 +134,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                         value: 'admin_paid',
                         child: Text("Jadikan Admin PAID"),
                       ),
+                      const PopupMenuDivider(),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Text(
@@ -122,5 +151,30 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         },
       ),
     );
+  }
+
+  // ✅ Confirmation dialog before deleting user
+  Future<bool> _confirmDelete(BuildContext context, String name) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Padam Pengguna"),
+            content: Text("Adakah anda pasti untuk memadam pengguna '$name'?"),
+            actions: [
+              TextButton(
+                child: const Text("Batal"),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                ),
+                child: const Text("Padam"),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 }

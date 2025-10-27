@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:nursurau/pages/admin_paid/layout.dart';
+import 'package:nursurau/pages/admin_paid/paid.dart';
 
 class PaidDashboard extends StatefulWidget {
   const PaidDashboard({super.key});
@@ -16,7 +16,6 @@ class _PaidDashboardState extends State<PaidDashboard> {
   int pendingSuraus = 0;
   int totalUsers = 0;
   int totalDonations = 0;
-
   bool isLoading = true;
 
   @override
@@ -27,47 +26,37 @@ class _PaidDashboardState extends State<PaidDashboard> {
 
   Future<void> _fetchReportData() async {
     try {
-      var surauSnapshot =
-          await FirebaseFirestore.instance.collection('form').get();
-      totalSuraus = surauSnapshot.size;
+      final firestore = FirebaseFirestore.instance;
 
-      var approvedSnapshot = await FirebaseFirestore.instance
-          .collection('form')
-          .where('status', isEqualTo: 'approved')
-          .get();
-      approvedSuraus = approvedSnapshot.size;
+      final surauSnapshot = await firestore.collection('form').get();
+      final approvedSnapshot =
+          await firestore.collection('form').where('status', isEqualTo: 'approved').get();
+      final pendingSnapshot =
+          await firestore.collection('form').where('status', isEqualTo: 'pending').get();
+      final userSnapshot = await firestore.collection('users').get();
+      final donationSnapshot = await firestore.collection('donations').get();
 
-      var pendingSnapshot = await FirebaseFirestore.instance
-          .collection('form')
-          .where('status', isEqualTo: 'pending')
-          .get();
-      pendingSuraus = pendingSnapshot.size;
-
-      var userSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
-      totalUsers = userSnapshot.size;
-
-      try {
-        var donationSnapshot =
-            await FirebaseFirestore.instance.collection('donations').get();
+      setState(() {
+        totalSuraus = surauSnapshot.size;
+        approvedSuraus = approvedSnapshot.size;
+        pendingSuraus = pendingSnapshot.size;
+        totalUsers = userSnapshot.size;
         totalDonations = donationSnapshot.size;
-      } catch (e) {
-        totalDonations = 0;
-      }
-
-      setState(() => isLoading = false);
+        isLoading = false;
+      });
     } catch (e) {
-      print("Error loading reports: $e");
+      debugPrint("Error loading reports: $e");
       setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AdminLayout(
-      child: isLoading
+    return Scaffold(
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -76,12 +65,12 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 25),
 
-                  // 🟩 Grid Cards
+                  // Report cards
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -90,39 +79,43 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       _buildReportCard(
-                        icon: Icons.mosque,
-                        title: "Total Suraus",
-                        count: totalSuraus,
-                        color: const Color(0xFF2E7D32),
+                        Icons.mosque,
+                        "Total Suraus",
+                        totalSuraus,
+                        const Color(0xFF2E7D32),
+                        onTap: () => _openAdminPage(context),
                       ),
                       _buildReportCard(
-                        icon: Icons.check_circle,
-                        title: "Approved",
-                        count: approvedSuraus,
-                        color: Colors.green.shade600,
+                        Icons.check_circle,
+                        "Approved",
+                        approvedSuraus,
+                        Colors.green.shade600,
                       ),
                       _buildReportCard(
-                        icon: Icons.hourglass_bottom,
-                        title: "Pending",
-                        count: pendingSuraus,
-                        color: Colors.orange,
+                        Icons.hourglass_bottom,
+                        "Pending",
+                        pendingSuraus,
+                        Colors.orange,
+                        onTap: () => _openAdminPage(context),
                       ),
                       _buildReportCard(
-                        icon: Icons.people,
-                        title: "Users",
-                        count: totalUsers,
-                        color: Colors.teal,
+                        Icons.people,
+                        "Users",
+                        totalUsers,
+                        Colors.teal,
                       ),
                       _buildReportCard(
-                        icon: Icons.volunteer_activism,
-                        title: "Donations",
-                        count: totalDonations,
-                        color: Colors.blue,
+                        Icons.volunteer_activism,
+                        "Donations",
+                        totalDonations,
+                        Colors.blue,
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 40),
+
+                  // Pie Chart
                   const Text(
                     "Surau Status Distribution",
                     style: TextStyle(
@@ -139,49 +132,45 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
-  Widget _buildReportCard({
-    required IconData icon,
-    required String title,
-    required int count,
-    required Color color,
+  Widget _buildReportCard(
+    IconData icon,
+    String title,
+    int count,
+    Color color, {
+    VoidCallback? onTap,
   }) {
-    return Card(
-      color: Colors.white,
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 50, color: color),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 50, color: color),
+              const SizedBox(height: 12),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(
+                count.toString(),
+                style: TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.bold, color: color),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              count.toString(),
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildPieChart() {
-    final double approved = approvedSuraus.toDouble();
-    final double pending = pendingSuraus.toDouble();
-    final double total = (approved + pending) == 0 ? 1 : (approved + pending);
+    final approved = approvedSuraus.toDouble();
+    final pending = pendingSuraus.toDouble();
+    final total = (approved + pending) == 0 ? 1 : (approved + pending);
 
     return SizedBox(
       height: 250,
@@ -194,29 +183,30 @@ class _PaidDashboardState extends State<PaidDashboard> {
           sections: [
             PieChartSectionData(
               color: Colors.green.shade600,
-              value: approved == 0 ? 0.01 : (approved / total) * 100,
+              value: (approved / total) * 100,
               title: "Approved\n$approvedSuraus",
               radius: 70,
               titleStyle: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+                  fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
             ),
             PieChartSectionData(
               color: Colors.orange,
-              value: pending == 0 ? 0.01 : (pending / total) * 100,
+              value: (pending / total) * 100,
               title: "Pending\n$pendingSuraus",
               radius: 70,
               titleStyle: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+                  fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _openAdminPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminPaidPage()),
     );
   }
 }
