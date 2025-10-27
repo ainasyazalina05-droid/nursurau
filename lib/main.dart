@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nursurau/pages/admin_ajk/login_page.dart';
+import 'package:nursurau/pages/admin_paid/paid.dart';
 import 'package:nursurau/pages/users/home_page.dart';
 import 'firebase_options.dart';
 
@@ -39,9 +40,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.green),
 
       // ✅ Keep your existing page setup
-       home: LoginPage(), // Admin AJK login
+       //home: LoginPage(), // Admin AJK login
       // home: const HomePage(), // User
-      // home: const AdminPaidPage(), // Pejabat admin
+         home: const AdminPaidPage(), // Pejabat admin
     );
   }
 }

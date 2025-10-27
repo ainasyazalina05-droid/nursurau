@@ -33,10 +33,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   Future<void> _fetchSurauDetails() async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('suraus')
-          .where('ajkId', isEqualTo: widget.ajkId)
-          .limit(1)
-          .get();
+    .collection('suraus')
+    .where('ajkId', isEqualTo: widget.ajkId)
+    .limit(1)
+    .get();
 
       if (snapshot.docs.isNotEmpty) {
         final doc = snapshot.docs.first;
