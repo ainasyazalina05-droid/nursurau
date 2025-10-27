@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nursurau/services/follow_service.dart';
-
+import 'package:timeago/timeago.dart' as timeago;
 
 class DonationsPage extends StatefulWidget {
   const DonationsPage({super.key});
@@ -19,7 +19,6 @@ class _DonationsPageState extends State<DonationsPage> {
     _donationsFuture = _fetchFollowedDonations();
   }
 
-  /// ✅ Fixed: Match ajkId with Firestore surau doc before fetching donations
   Future<List<Map<String, dynamic>>> _fetchFollowedDonations() async {
     try {
       final followedAjkIds = await FollowService.loadFollowed();
@@ -28,7 +27,6 @@ class _DonationsPageState extends State<DonationsPage> {
       List<Map<String, dynamic>> allDonations = [];
 
       for (final ajkId in followedAjkIds) {
-        // Find surau document that matches this ajkId
         final query = await FirebaseFirestore.instance
             .collection('suraus')
             .where('ajkId', isEqualTo: ajkId)
@@ -41,7 +39,6 @@ class _DonationsPageState extends State<DonationsPage> {
         final surauName = surauDoc.data()['name'] ?? 'Surau';
         final surauDocId = surauDoc.id;
 
-        // Now fetch its donations
         final donationsSnapshot = await FirebaseFirestore.instance
             .collection('suraus')
             .doc(surauDocId)
@@ -57,7 +54,6 @@ class _DonationsPageState extends State<DonationsPage> {
         }
       }
 
-      // Sort by timestamp (latest first)
       allDonations.sort((a, b) {
         final t1 = (a['timestamp'] as Timestamp?)?.toDate() ?? DateTime(2000);
         final t2 = (b['timestamp'] as Timestamp?)?.toDate() ?? DateTime(2000);
@@ -107,7 +103,7 @@ class _DonationsPageState extends State<DonationsPage> {
               await _donationsFuture;
             },
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               itemCount: donations.length,
               itemBuilder: (context, index) {
                 final data = donations[index];
@@ -115,100 +111,133 @@ class _DonationsPageState extends State<DonationsPage> {
                 final title = (data['title'] ?? 'Tiada Tajuk') as String;
                 final description = (data['description'] ?? '') as String;
                 final surauName = (data['surauName'] ?? 'Surau Tidak Dikenal') as String;
+                final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+                final timeAgo = timeago.format(timestamp);
 
                 return Card(
+                  elevation: 4,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 3,
+                      borderRadius: BorderRadius.circular(16)),
                   margin: const EdgeInsets.symmetric(vertical: 10),
                   clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () => _showDonationDetails(context, data, themeColor),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (imageUrl.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => FullScreenImage(url: imageUrl),
-                                ),
-                              );
-                            },
-                            child: Image.network(
-                              imageUrl,
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image section
+                      if (imageUrl.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FullScreenImage(url: imageUrl),
+                              ),
+                            );
+                          },
+                          child: Stack(
                             children: [
-                              Text(
-                                title,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                              SizedBox(
+                                height: 200,
+                                width: double.infinity,
+                                child: Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Center(
+                                          child: CircularProgressIndicator()),
+                                    );
+                                  },
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                surauName,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                description,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: themeColor.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.volunteer_activism,
-                                            color: themeColor, size: 18),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          "Lihat",
-                                          style: TextStyle(
-                                            color: themeColor,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                              Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
+                                    colors: [
+                                      Colors.black.withOpacity(0.35),
+                                      Colors.transparent
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
+                              Positioned(
+                                bottom: 8,
+                                left: 12,
+                                child: Text(
+                                  surauName,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [
+                                        Shadow(
+                                            offset: Offset(0, 1),
+                                            blurRadius: 3,
+                                            color: Colors.black54)
+                                      ]),
+                                ),
+                              )
                             ],
                           ),
                         ),
-                      ],
-                    ),
+                      // Text section
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              timeAgo,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              description,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black87),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () => _showDonationDetails(
+                                      context, data, themeColor),
+                                  icon: Icon(Icons.volunteer_activism,
+                                      color: themeColor),
+                                  label: const Text(
+                                    "Lihat",
+                                    style: TextStyle(color: Colors.black87),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.grey.shade200.withOpacity(0.8),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 8),
+                                  ),
+                                )
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -240,7 +269,6 @@ class _DonationsPageState extends State<DonationsPage> {
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
@@ -254,41 +282,33 @@ class _DonationsPageState extends State<DonationsPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+              Text(title,
+                  style:
+                      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-              Text(
-                surauName,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
+              Text(surauName,
+                  style: const TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 10),
               if (imageUrl.isNotEmpty)
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => FullScreenImage(url: imageUrl),
-                      ),
-                    );
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => FullScreenImage(url: imageUrl)),
+                  ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
                       imageUrl,
-                      height: 180,
+                      height: 200,
                       width: double.infinity,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
               const SizedBox(height: 14),
-              Text(
-                description,
-                style: const TextStyle(fontSize: 15, height: 1.4),
-              ),
+              Text(description,
+                  style: const TextStyle(fontSize: 15, height: 1.4)),
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
@@ -297,11 +317,9 @@ class _DonationsPageState extends State<DonationsPage> {
                   color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  'Akaun Bank: $bankAccount',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, color: Colors.black87),
-                ),
+                child: Text('Akaun Bank: $bankAccount',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.black87)),
               ),
               const SizedBox(height: 16),
               if (qrUrl.isNotEmpty)
@@ -317,14 +335,11 @@ class _DonationsPageState extends State<DonationsPage> {
                     ),
                     const SizedBox(height: 10),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FullScreenImage(url: qrUrl),
-                          ),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => FullScreenImage(url: qrUrl)),
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.network(

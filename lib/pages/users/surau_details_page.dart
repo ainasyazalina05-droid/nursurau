@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nursurau/services/follow_service.dart';
 
-
 class SurauDetailsPage extends StatefulWidget {
-  final String ajkId; // 🔹 AJK ID digunakan untuk filter posting
+  final String ajkId;
   const SurauDetailsPage({super.key, required this.ajkId});
 
   @override
@@ -31,13 +30,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
     setState(() => _isFollowed = followed);
 
-    // Show temporary popup/snackbar
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            followed ? "Anda kini mengikuti" : "Anda berhenti mengikuti",
-          ),
+          content: Text(followed ? "Anda kini mengikuti" : "Anda berhenti mengikuti"),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           backgroundColor: followed ? Colors.green.shade600 : Colors.grey.shade600,
@@ -55,6 +51,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         .snapshots();
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text('Maklumat Surau'),
         backgroundColor: const Color.fromARGB(255, 135, 172, 79),
@@ -68,70 +65,107 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Surau Image
-                if (data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      data['imageUrl'],
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                else
-                  Container(
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.mosque, size: 80, color: Colors.green),
-                  ),
-                const SizedBox(height: 16),
-
-                // Surau Name & Follow Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Surau Banner Image
+                Stack(
                   children: [
-                    Expanded(
-                      child: Text(
-                        data['name'] ?? '',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Container(
+                      height: 220,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                        image: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(data['imageUrl']),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        color: Colors.green.shade200,
+                      ),
+                      child: data['imageUrl'] == null || (data['imageUrl'] as String).isEmpty
+                          ? const Icon(Icons.mosque, size: 100, color: Colors.green)
+                          : null,
+                    ),
+                    // Gradient overlay for text readability
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                        gradient: LinearGradient(
+                          colors: [Colors.black.withOpacity(0.3), Colors.transparent],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: _toggleFollow,
-                      icon: Icon(_isFollowed ? Icons.check : Icons.add),
-                      label: Text(_isFollowed ? "Mengikuti" : "Ikut"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isFollowed ? Colors.green.shade600 : Colors.blue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                    // Surau info
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      right: 16,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['name'] ?? '',
+                            style: const TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            data['address'] ?? '',
+                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.person, size: 16, color: Colors.white70),
+                              const SizedBox(width: 4),
+                              Text(data['nazirName'] ?? '', style: const TextStyle(color: Colors.white70)),
+                              const SizedBox(width: 12),
+                              const Icon(Icons.phone, size: 16, color: Colors.white70),
+                              const SizedBox(width: 4),
+                              Text(data['nazirPhone'] ?? '', style: const TextStyle(color: Colors.white70)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Follow button
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: ElevatedButton.icon(
+                        onPressed: _toggleFollow,
+                        icon: Icon(_isFollowed ? Icons.check : Icons.add, size: 20),
+                        label: Text(_isFollowed ? "Mengikuti" : "Ikut"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isFollowed ? Colors.green.shade600 : Colors.white,
+                          foregroundColor: _isFollowed ? Colors.white : Colors.green.shade600,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            side: BorderSide(color: Colors.green.shade600, width: 1.2),
+                          ),
+                          elevation: 4,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 16),
 
-                // Surau Details
-                Text(data['address'] ?? '', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                const SizedBox(height: 4),
-                Text("Nazir: ${data['nazirName'] ?? ''}"),
-                Text("Tel: ${data['nazirPhone'] ?? ''}"),
-                const Divider(height: 30, thickness: 1.2),
-
-                // Posting Surau
-                const Text(
-                  "Posting Surau",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Posting Surau Section
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Posting Surau",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -139,11 +173,17 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                       .where('ajkId', isEqualTo: widget.ajkId)
                       .snapshots(),
                   builder: (context, postSnap) {
-                    if (postSnap.hasError) return const Text('Ralat memuatkan posting.');
+                    if (postSnap.hasError) return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('Ralat memuatkan posting.'),
+                    );
                     if (!postSnap.hasData) return const Center(child: CircularProgressIndicator());
 
                     final posts = postSnap.data!.docs;
-                    if (posts.isEmpty) return const Text("Tiada posting setakat ini");
+                    if (posts.isEmpty) return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text("Tiada posting setakat ini"),
+                    );
 
                     return Column(
                       children: posts.map((doc) {
@@ -152,56 +192,79 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                             ? (p['timestamp'] as Timestamp).toDate()
                             : null;
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                blurRadius: 6,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          elevation: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p['title'] ?? '',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 6),
-                                if (p['category'] != null)
-                                  Chip(
-                                    label: Text(p['category']),
-                                    backgroundColor: Colors.green.shade50,
-                                    side: BorderSide.none,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty)
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                  child: Image.network(
+                                    p['imageUrl'],
+                                    height: 180,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
                                   ),
-                                const SizedBox(height: 6),
-                                Text(p['description'] ?? ''),
-                                const SizedBox(height: 8),
-                                if (p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      p['imageUrl'],
-                                      height: 160,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (p['category'] != null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade200,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          p['category'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      p['title'] ?? '',
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                     ),
-                                  ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  ts != null
-                                      ? "${ts.day}/${ts.month}/${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}"
-                                      : '',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      p['description'] ?? '',
+                                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (ts != null)
+                                      Text(
+                                        "${ts.day}/${ts.month}/${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}",
+                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),
                     );
                   },
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           );
