@@ -29,10 +29,14 @@ class _PaidDashboardState extends State<PaidDashboard> {
       final firestore = FirebaseFirestore.instance;
 
       final surauSnapshot = await firestore.collection('form').get();
-      final approvedSnapshot =
-          await firestore.collection('form').where('status', isEqualTo: 'approved').get();
-      final pendingSnapshot =
-          await firestore.collection('form').where('status', isEqualTo: 'pending').get();
+      final approvedSnapshot = await firestore
+          .collection('form')
+          .where('status', isEqualTo: 'approved')
+          .get();
+      final pendingSnapshot = await firestore
+          .collection('form')
+          .where('status', isEqualTo: 'pending')
+          .get();
       final userSnapshot = await firestore.collection('users').get();
       final donationSnapshot = await firestore.collection('donations').get();
 
@@ -65,12 +69,12 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 25),
 
-                  // Report cards
+                  // Report Cards
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -80,23 +84,24 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     children: [
                       _buildReportCard(
                         Icons.mosque,
-                        "Total Suraus",
+                        "All Suraus",
                         totalSuraus,
                         const Color(0xFF2E7D32),
-                        onTap: () => _openAdminPage(context),
+                        onTap: () => _openAdminPage(context, "All"),
                       ),
                       _buildReportCard(
                         Icons.check_circle,
                         "Approved",
                         approvedSuraus,
                         Colors.green.shade600,
+                        onTap: () => _openAdminPage(context, "Approved"),
                       ),
                       _buildReportCard(
                         Icons.hourglass_bottom,
                         "Pending",
                         pendingSuraus,
                         Colors.orange,
-                        onTap: () => _openAdminPage(context),
+                        onTap: () => _openAdminPage(context, "Pending"),
                       ),
                       _buildReportCard(
                         Icons.people,
@@ -104,18 +109,11 @@ class _PaidDashboardState extends State<PaidDashboard> {
                         totalUsers,
                         Colors.teal,
                       ),
-                      _buildReportCard(
-                        Icons.volunteer_activism,
-                        "Donations",
-                        totalDonations,
-                        Colors.blue,
-                      ),
                     ],
                   ),
 
                   const SizedBox(height: 40),
 
-                  // Pie Chart
                   const Text(
                     "Surau Status Distribution",
                     style: TextStyle(
@@ -151,9 +149,11 @@ class _PaidDashboardState extends State<PaidDashboard> {
             children: [
               Icon(icon, size: 50, color: color),
               const SizedBox(height: 12),
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 6),
               Text(
                 count.toString(),
@@ -203,10 +203,12 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
-  void _openAdminPage(BuildContext context) {
+  void _openAdminPage(BuildContext context, String filter) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AdminPaidPage()),
+      MaterialPageRoute(
+        builder: (_) => AdminPaidPage(filter: filter),
+      ),
     );
   }
 }

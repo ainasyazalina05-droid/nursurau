@@ -4,14 +4,22 @@ import 'manage_surau_page.dart';
 import '../admin_ajk/surau_details_page.dart';
 
 class AdminPaidPage extends StatefulWidget {
-  const AdminPaidPage({super.key});
+  final String filter;
+
+  const AdminPaidPage({super.key, this.filter = "Pending"});
 
   @override
   State<AdminPaidPage> createState() => _AdminPaidPageState();
 }
 
 class _AdminPaidPageState extends State<AdminPaidPage> {
-  String selectedStatus = "Pending"; // Default filter
+  String selectedStatus = "Pending";
+
+  @override
+  void initState() {
+    super.initState();
+    selectedStatus = widget.filter;
+  }
 
   Future<String> _getAjkName(String docId) async {
     try {
@@ -24,16 +32,14 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
 
       return ajkDoc.data()?["ajkName"] ?? "-";
     } catch (e) {
-      debugPrint("Error fetching AJK name for $docId: $e");
+      debugPrint("Error fetching AJK name: $e");
       return "-";
     }
   }
 
   Stream<QuerySnapshot> _getStream() {
     final forms = FirebaseFirestore.instance.collection("form");
-    if (selectedStatus == "All") {
-      return forms.snapshots();
-    }
+    if (selectedStatus == "All") return forms.snapshots();
     return forms
         .where("status", isEqualTo: selectedStatus.toLowerCase())
         .snapshots();
@@ -59,7 +65,6 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // 🔽 Dropdown Filter
             Align(
               alignment: Alignment.centerRight,
               child: Container(
@@ -89,9 +94,9 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 15),
 
-            // 📋 Data List
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _getStream(),
@@ -119,8 +124,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                     itemBuilder: (context, index) {
                       final data = docs[index].data() as Map<String, dynamic>;
                       final docId = docs[index].id;
-                      final status =
-                          (data["status"] ?? "pending").toString().toLowerCase();
+                      final status = (data["status"] ?? "").toString().toLowerCase();
 
                       return FutureBuilder<String>(
                         future: _getAjkName(docId),
@@ -128,47 +132,17 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                           final ajkName = ajkSnapshot.data ?? "-";
 
                           return Card(
-                            color: Colors.white,
+                            elevation: 2,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: Colors.green.shade100,
-                                width: 1,
-                              ),
                             ),
-                            elevation: 2,
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              leading: Icon(
-                                status == "approved"
-                                    ? Icons.mosque
-                                    : Icons.pending_actions,
-                                color: const Color(0xFF2E7D32),
-                                size: 32,
-                              ),
-                              title: Text(
-                                data["surauName"] ?? "No name",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                  fontSize: 16,
-                                ),
-                              ),
+                              title: Text(data["surauName"] ?? "No name"),
                               subtitle: Text("AJK: $ajkName"),
                               trailing: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2E7D32),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 8,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
                                 ),
                                 child: Text(
                                   status == "approved" ? "View" : "Manage",
