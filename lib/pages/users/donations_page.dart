@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nursurau/services/follow_service.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:intl/intl.dart'; // ✅ Using intl instead of timeago
 
 class DonationsPage extends StatefulWidget {
   const DonationsPage({super.key});
@@ -110,9 +110,12 @@ class _DonationsPageState extends State<DonationsPage> {
                 final imageUrl = (data['imageUrl'] ?? '') as String;
                 final title = (data['title'] ?? 'Tiada Tajuk') as String;
                 final description = (data['description'] ?? '') as String;
-                final surauName = (data['surauName'] ?? 'Surau Tidak Dikenal') as String;
-                final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
-                final timeAgo = timeago.format(timestamp);
+                final surauName =
+                    (data['surauName'] ?? 'Surau Tidak Dikenal') as String;
+                final timestamp =
+                    (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+                final formattedDate =
+                    DateFormat('dd MMM yyyy, hh:mm a').format(timestamp);
 
                 return Card(
                   elevation: 4,
@@ -123,7 +126,6 @@ class _DonationsPageState extends State<DonationsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Image section
                       if (imageUrl.isNotEmpty)
                         GestureDetector(
                           onTap: () {
@@ -184,7 +186,6 @@ class _DonationsPageState extends State<DonationsPage> {
                             ],
                           ),
                         ),
-                      // Text section
                       Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
@@ -197,7 +198,7 @@ class _DonationsPageState extends State<DonationsPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              timeAgo,
+                              formattedDate,
                               style: const TextStyle(
                                   fontSize: 12, color: Colors.grey),
                             ),
@@ -227,7 +228,8 @@ class _DonationsPageState extends State<DonationsPage> {
                                         Colors.grey.shade200.withOpacity(0.8),
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10)),
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 20, vertical: 8),
                                   ),
@@ -283,8 +285,8 @@ class _DonationsPageState extends State<DonationsPage> {
               ),
               const SizedBox(height: 16),
               Text(title,
-                  style:
-                      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Text(surauName,
                   style: const TextStyle(fontSize: 14, color: Colors.grey)),

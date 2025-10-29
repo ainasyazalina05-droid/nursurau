@@ -1,35 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'view_form.dart';
+import 'manage_surau_page.dart';
+import '../admin_ajk/surau_details_page.dart';
 
-class AdminPaidPage extends StatelessWidget {
-  const AdminPaidPage({super.key});
+class AdminPaidPage extends StatefulWidget {
+  final String filter;
+
+  const AdminPaidPage({super.key, this.filter = "Pending"});
 
   @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData(
-        primaryColor: const Color(0xFF2E7D32),
-        scaffoldBackgroundColor: const Color(0xFFFAF8F0),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            color: Color(0xFF2E7D32),
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-          iconTheme: IconThemeData(color: Color(0xFF2E7D32)),
-        ),
-      ),
-      child: const OfficerDashboard(),
-    );
-  }
+  State<AdminPaidPage> createState() => _AdminPaidPageState();
 }
 
-class OfficerDashboard extends StatelessWidget {
-  const OfficerDashboard({super.key});
+class _AdminPaidPageState extends State<AdminPaidPage> {
+  String selectedStatus = "Pending";
+
+  @override
+  void initState() {
+    super.initState();
+    selectedStatus = widget.filter;
+  }
 
   Future<String> _getAjkName(String docId) async {
     try {
@@ -40,90 +30,131 @@ class OfficerDashboard extends StatelessWidget {
           .doc("ajk_data")
           .get();
 
-      if (ajkDoc.exists) {
-        return ajkDoc.data()?["ajkName"] ?? "-";
-      } else {
-        return "-";
-      }
+      return ajkDoc.data()?["ajkName"] ?? "-";
     } catch (e) {
+      debugPrint("Error fetching AJK name: $e");
       return "-";
     }
+  }
+
+  Stream<QuerySnapshot> _getStream() {
+    final forms = FirebaseFirestore.instance.collection("form");
+    if (selectedStatus == "All") return forms.snapshots();
+    return forms
+        .where("status", isEqualTo: selectedStatus.toLowerCase())
+        .snapshots();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("OFFICER DASHBOARD")),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          "OFFICER DASHBOARD",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF2E7D32),
+        elevation: 3,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Pending Surau AJK Applications",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedStatus,
+                    dropdownColor: Colors.white,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.green),
+                    items: const ['All', 'Pending', 'Approved', 'Rejected']
+                        .map((s) => DropdownMenuItem(
+                              value: s,
+                              child: Text(s),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => selectedStatus = value);
+                      }
+                    },
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 15),
+
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection("form")
-                    .where("status", isEqualTo: "pending")
-                    .snapshots(),
+                stream: _getStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                        child: Text("No pending applications."));
+                    return Center(
+                      child: Text(
+                        "No $selectedStatus applications found.",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
                   }
 
-                  var docs = snapshot.data!.docs;
+                  final docs = snapshot.data!.docs;
+
                   return ListView.builder(
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
-                      var data = docs[index].data() as Map<String, dynamic>;
-                      var docId = docs[index].id;
+                      final data = docs[index].data() as Map<String, dynamic>;
+                      final docId = docs[index].id;
+                      final status = (data["status"] ?? "").toString().toLowerCase();
 
                       return FutureBuilder<String>(
                         future: _getAjkName(docId),
                         builder: (context, ajkSnapshot) {
-                          String ajkName = ajkSnapshot.data ?? "-";
+                          final ajkName = ajkSnapshot.data ?? "-";
 
                           return Card(
-                            color: const Color(0xFFF5F2E7),
+                            elevation: 2,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: ListTile(
-                              leading: const Icon(Icons.pending_actions,
-                                  color: Color(0xFF2E7D32)),
-                              title: Text(
-                                data["surauName"] ?? "No name",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
+                              title: Text(data["surauName"] ?? "No name"),
                               subtitle: Text("AJK: $ajkName"),
                               trailing: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2E7D32),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
                                 ),
-                                child: const Text(
-                                  "View Form",
-                                  style: TextStyle(color: Colors.white),
+                                child: Text(
+                                  status == "approved" ? "View" : "Manage",
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => ViewForm(docId: docId),
+                                      builder: (_) => status == "approved"
+                                          ? SurauDetailsPage(ajkId: docId)
+                                          : ManageSurauPage(docId: docId),
                                     ),
                                   );
                                 },

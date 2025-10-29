@@ -33,10 +33,10 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   Future<void> _fetchSurauDetails() async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('suraus')
-          .where('ajkId', isEqualTo: widget.ajkId)
-          .limit(1)
-          .get();
+    .collection('suraus')
+    .where('ajkId', isEqualTo: widget.ajkId)
+    .limit(1)
+    .get();
 
       if (snapshot.docs.isNotEmpty) {
         final doc = snapshot.docs.first;
@@ -183,11 +183,6 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     final themeColor = const Color.fromARGB(255, 135, 172, 79);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Maklumat Surau", style: TextStyle(color: Colors.white)),
-        backgroundColor: themeColor,
-        centerTitle: true,
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
