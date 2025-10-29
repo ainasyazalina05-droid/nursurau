@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'follow_service.dart';
+import 'package:nursurau/services/follow_service.dart';
+import 'package:async/async.dart';
+import 'package:nursurau/pages/users/surau_details_page.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -10,130 +12,161 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  List<String> followedSurauIds = [];
+  List<String> followedAjkIds = [];
+  bool isLoading = true;
+
+  // Optional: store last visit timestamp to highlight new posts
+  DateTime lastVisit = DateTime.now().subtract(const Duration(days: 1));
 
   @override
   void initState() {
     super.initState();
-    _loadFollowed();
+    _loadFollowedAjkIds();
   }
 
-  Future<void> _loadFollowed() async {
-    final ids = await FollowService.getFollowedSurauIds();
-    setState(() {
-      followedSurauIds = ids;
+  Future<void> _loadFollowedAjkIds() async {
+    try {
+      final ajkIds = await FollowService.getFollowedSurauIds();
+      setState(() {
+        followedAjkIds = ajkIds;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error loading followed ajkIds: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  Stream<List<QueryDocumentSnapshot>> _getPostsStream() {
+    if (followedAjkIds.isEmpty) return const Stream.empty().map((_) => []);
+
+    final streams = followedAjkIds.map((ajkId) {
+      return FirebaseFirestore.instance
+          .collection('posts')
+          .where('ajkId', isEqualTo: ajkId) // only filter by ajkId
+          .snapshots()
+          .map((snapshot) => snapshot.docs);
+    });
+
+    return StreamZip(streams).map((listOfDocs) {
+      final allPosts = listOfDocs.expand((x) => x).toList();
+
+      // Sort posts in Flutter by timestamp descending
+      allPosts.sort((a, b) {
+        final t1 = (a['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final t2 = (b['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+        return t2.compareTo(t1);
+      });
+
+      return allPosts;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (followedAjkIds.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Notifikasi")),
+        body: const Center(
+          child: Text("Anda belum mengikuti mana-mana surau."),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifikasi'),
-        backgroundColor: const Color(0xFF87AC4F),
-      ),
-      body: followedSurauIds.isEmpty
-          ? const Center(
-              child: Text(
-                "Anda belum mengikuti mana-mana surau.",
-                style: TextStyle(fontSize: 16),
-              ),
-            )
-          : StreamBuilder<QuerySnapshot>(
-              // ✅ Fetch posts where surauId is in followed list
-              stream: FirebaseFirestore.instance
-                  .collection('posts')
-                  .where('surauId', whereIn: followedSurauIds)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(
-                      child: Text("Ralat memuatkan notifikasi"));
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      appBar: AppBar(title: const Text("Notifikasi")),
+      body: StreamBuilder<List<QueryDocumentSnapshot>>(
+        stream: _getPostsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                final posts = snapshot.data!.docs;
-                if (posts.isEmpty) {
-                  return const Center(
-                      child: Text("Tiada notifikasi baru."));
-                }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text("Ralat memuatkan notifikasi: ${snapshot.error}"),
+            );
+          }
 
-                // Sort posts by timestamp descending
-                posts.sort((a, b) {
-                  final t1 = (a['timestamp'] as Timestamp?)?.toDate();
-                  final t2 = (b['timestamp'] as Timestamp?)?.toDate();
-                  return (t2 ?? DateTime.now())
-                      .compareTo(t1 ?? DateTime.now());
-                });
+          final posts = snapshot.data ?? [];
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final p = posts[index].data() as Map<String, dynamic>;
-                    final ts = p['timestamp'] != null
-                        ? (p['timestamp'] as Timestamp).toDate()
-                        : null;
+          if (posts.isEmpty) {
+            return const Center(child: Text("Tiada notifikasi baru."));
+          }
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p['title'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            if (p['category'] != null)
-                              Chip(
-                                label: Text(p['category']),
-                                backgroundColor: Colors.green.shade50,
-                                side: BorderSide.none,
-                              ),
-                            const SizedBox(height: 6),
-                            Text(p['description'] ?? ''),
-                            const SizedBox(height: 8),
-                            if (p['imageUrl'] != null &&
-                                (p['imageUrl'] as String).isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  p['imageUrl'],
-                                  height: 160,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            const SizedBox(height: 6),
-                            Text(
-                              ts != null
-                                  ? "${ts.day}/${ts.month}/${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}"
-                                  : '',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final data = posts[index].data() as Map<String, dynamic>;
+              final title = data['title'] ?? 'Tiada tajuk';
+              final desc = data['description'] ?? '';
+              final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+              final ajkId = data['ajkId'] ?? '';
+
+              final isNew = timestamp.isAfter(lastVisit);
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  onTap: () {
+                    // Navigate to SurauDetailsPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SurauDetailsPage(ajkId: ajkId),
                       ),
                     );
                   },
-                );
-              },
-            ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  title: Row(
+                    children: [
+                      if (isNew)
+                        Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  subtitle: Text(desc),
+                  trailing: Text(
+                    "${timestamp.day}/${timestamp.month}/${timestamp.year}",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
