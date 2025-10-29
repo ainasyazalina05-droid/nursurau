@@ -94,9 +94,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _getStream(),
@@ -124,7 +122,8 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                     itemBuilder: (context, index) {
                       final data = docs[index].data() as Map<String, dynamic>;
                       final docId = docs[index].id;
-                      final status = (data["status"] ?? "").toString().toLowerCase();
+                      final status =
+                          (data["status"] ?? "").toString().toLowerCase();
 
                       return FutureBuilder<String>(
                         future: _getAjkName(docId),
@@ -143,20 +142,23 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                               trailing: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2E7D32),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
                                 ),
                                 child: Text(
                                   status == "approved" ? "View" : "Manage",
                                   style: const TextStyle(color: Colors.white),
                                 ),
                                 onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => status == "approved"
-                                          ? SurauDetailsPage(ajkId: docId)
-                                          : ManageSurauPage(docId: docId),
-                                    ),
-                                  );
+                                Navigator.push(
+                               context,
+                                MaterialPageRoute(
+                                builder: (_) =>status =="approved" 
+                                ?SurauDetailsPage(ajkId: docId)
+                                : ManageSurauPage(docId: docId),
+                                ),
+                                );
                                 },
                               ),
                             ),

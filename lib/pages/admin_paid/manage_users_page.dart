@@ -11,38 +11,28 @@ class ManageUsersPage extends StatefulWidget {
 class _ManageUsersPageState extends State<ManageUsersPage> {
   final Color themeColor = const Color(0xFF2E7D32);
 
-  // ✅ Update Role
   Future<void> updateRole(String username, String newRole) async {
     try {
       await FirebaseFirestore.instance.collection('ajk_users').doc(username).update({
         'role': newRole,
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Peranan pengguna dikemas kini kepada $newRole."),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(content: Text("Peranan dikemas kini kepada $newRole")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ralat mengemas kini peranan: $e"),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text("Ralat mengemas kini peranan: $e"), backgroundColor: Colors.red),
       );
     }
   }
 
-  // ✅ Update Status
   Future<void> updateStatus(String username, String newStatus) async {
     try {
       await FirebaseFirestore.instance.collection('ajk_users').doc(username).update({
         'status': newStatus,
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Status pengguna dikemas kini: $newStatus")),
+        SnackBar(content: Text("Status dikemas kini: $newStatus")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -51,16 +41,14 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     }
   }
 
-  // ✅ Delete user
   Future<void> deleteUser(String username) async {
     final confirm = await _confirmDelete(context, username);
     if (!confirm) return;
 
     try {
       await FirebaseFirestore.instance.collection('ajk_users').doc(username).delete();
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pengguna berjaya dipadam."), backgroundColor: Colors.redAccent),
+        const SnackBar(content: Text("Pengguna dipadam."), backgroundColor: Colors.redAccent),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,24 +61,27 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Manage AJK Users"),
+        title: const Text("Senarai AJK Users"),
         backgroundColor: themeColor,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('ajk_users').snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          final users = snapshot.data!.docs;
+          if (snapshot.hasError) {
+            return Center(child: Text("Ralat: ${snapshot.error}"));
+          }
 
-          if (users.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-              child: Text(
-                "Tiada pengguna dijumpai.",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
+              child: Text("Tiada pengguna dijumpai."),
             );
           }
+
+          final users = snapshot.data!.docs;
 
           return ListView.builder(
             padding: const EdgeInsets.all(12),
@@ -99,31 +90,32 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
               final doc = users[index];
               final data = doc.data() as Map<String, dynamic>;
 
-              final username = doc.id;
-              final role = data['role'] ?? 'ajk';
-              final status = data['status'] ?? 'pending';
+              final username = data['username'] ?? doc.id;
+              final role = data['role'] ?? '-';
+              final status = data['status'] ?? '-';
               final surauName = data['surauName'] ?? '-';
 
               return Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 3,
                 margin: const EdgeInsets.symmetric(vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Colors.green,
                     child: Icon(Icons.person, color: Colors.white),
                   ),
                   title: Text(username, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("Role: $role\nSurau: $surauName\nStatus: $status"),
+                  subtitle: Text("Role: $role\nStatus: $status\nSurau: $surauName"),
                   isThreeLine: true,
                   trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.green),
                     onSelected: (value) async {
                       if (value == 'delete') {
-                        deleteUser(username);
+                        await deleteUser(username);
                       } else if (value == 'approve' || value == 'reject') {
-                        updateStatus(username, value);
+                        await updateStatus(username, value);
                       } else {
-                        updateRole(username, value);
+                        await updateRole(username, value);
                       }
                     },
                     itemBuilder: (context) => [
@@ -132,13 +124,11 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                       const PopupMenuItem(value: 'blocked', child: Text("Sekat Pengguna")),
                       const PopupMenuDivider(),
                       const PopupMenuItem(
-                        value: 'approve',
-                        child: Text("Approve ✅", style: TextStyle(color: Colors.green)),
-                      ),
+                          value: 'approve',
+                          child: Text("Approve", style: TextStyle(color: Colors.green))),
                       const PopupMenuItem(
-                        value: 'reject',
-                        child: Text("Reject ❌", style: TextStyle(color: Colors.red)),
-                      ),
+                          value: 'reject',
+                          child: Text("Reject ", style: TextStyle(color: Colors.red))),
                       const PopupMenuDivider(),
                       const PopupMenuItem(
                         value: 'delete',
@@ -155,24 +145,20 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     );
   }
 
-  // ✅ Confirmation dialog before deleting user
   Future<bool> _confirmDelete(BuildContext context, String username) async {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("Padam Pengguna"),
-            content: Text("Adakah anda pasti untuk memadam pengguna '$username'?"),
+            content: Text("Adakah anda pasti untuk memadam '$username'?"),
             actions: [
               TextButton(
-                child: const Text("Batal"),
-                onPressed: () => Navigator.of(context).pop(false),
-              ),
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Batal")),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                ),
-                child: const Text("Padam"),
                 onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                child: const Text("Padam"),
               ),
             ],
           ),
