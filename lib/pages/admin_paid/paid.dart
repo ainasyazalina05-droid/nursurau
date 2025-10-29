@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'manage_surau_page.dart';
 import '../admin_ajk/surau_details_page.dart';
 
 class AdminPaidPage extends StatefulWidget {
