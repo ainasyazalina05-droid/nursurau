@@ -1,42 +1,142 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ManageSurauPage extends StatefulWidget {
-  final String docId;
-  const ManageSurauPage({super.key, required this.docId});
+/// 🕌 Halaman utama — senarai semua surau
+class ManageSurauPage extends StatelessWidget {
+  const ManageSurauPage({super.key});
+
+  Color _statusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
-  State<ManageSurauPage> createState() => _ManageSurauPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Manage Surau"),
+        backgroundColor: Colors.green[700],
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('suraus').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Ralat: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Tiada surau dijumpai"));
+          }
+
+          final surauList = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: surauList.length,
+            itemBuilder: (context, index) {
+              final data = surauList[index].data() as Map<String, dynamic>;
+              final docId = surauList[index].id;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+                child: ListTile(
+                  title: Text(
+                    data['surauName'] ?? 'Tanpa Nama',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Alamat: ${data['surauAddress'] ?? '-'}"),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Status: ${data['status'] ?? '-'}",
+                        style: TextStyle(
+                          color: _statusColor(data['status']),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: Colors.white, // ← make the arrow white
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            SurauDetailPage(docId: docId),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _ManageSurauPageState extends State<ManageSurauPage> {
+/// 🧾 Halaman detail — info surau + fungsi approve / reject
+class SurauDetailPage extends StatefulWidget {
+  final String docId;
+  const SurauDetailPage({super.key, required this.docId});
+
+  @override
+  State<SurauDetailPage> createState() => _SurauDetailPageState();
+}
+
+class _SurauDetailPageState extends State<SurauDetailPage> {
   Map<String, dynamic>? surauData;
-  Map<String, dynamic>? ajkData;
   bool isLoading = true;
   String? errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _fetchFormData();
+    _fetchSurauData();
   }
 
-  /// ✅ Fetch data with loading & error handling
-  Future<void> _fetchFormData() async {
+  /// 🔹 Ambil data surau berdasarkan docId
+  Future<void> _fetchSurauData() async {
     try {
-      final docRef =
-          FirebaseFirestore.instance.collection('form').doc(widget.docId);
+      final docSnap = await FirebaseFirestore.instance
+          .collection('suraus')
+          .doc(widget.docId)
+          .get();
 
-      final formSnap = await docRef.get();
-      final ajkSnap = await docRef.collection('ajk').doc('ajk_data').get();
-
-      if (!formSnap.exists) {
+      if (!docSnap.exists) {
         throw Exception("Data surau tidak dijumpai.");
       }
 
       setState(() {
-        surauData = formSnap.data();
-        ajkData = ajkSnap.data();
+        surauData = docSnap.data();
         isLoading = false;
       });
     } catch (e) {
@@ -47,7 +147,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  /// ✅ Update status with confirmation dialog
+  /// 🔹 Kemaskini status (approved / rejected)
   Future<void> _confirmAndUpdateStatus(String newStatus) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -77,7 +177,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     if (confirm == true) {
       try {
         await FirebaseFirestore.instance
-            .collection('form')
+            .collection('suraus')
             .doc(widget.docId)
             .update({'status': newStatus});
 
@@ -101,7 +201,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  /// ✅ Status color helper
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -115,7 +214,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  /// ✅ Info Card UI (unchanged layout)
   Widget _buildInfoCard(String title, Map<String, String> info) {
     return Card(
       elevation: 3,
@@ -142,8 +240,9 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: isStatus ? FontWeight.bold : FontWeight.normal,
-                    color:
-                        isStatus ? _statusColor(e.value.toLowerCase()) : Colors.black,
+                    color: isStatus
+                        ? _statusColor(e.value.toLowerCase())
+                        : Colors.black,
                   ),
                 ),
               );
@@ -165,7 +264,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Manage Surau"),
+          title: const Text("Detail Surau"),
           backgroundColor: Colors.green[700],
         ),
         body: Center(
@@ -186,7 +285,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Manage Surau"),
+        title: const Text("Detail Surau"),
         backgroundColor: Colors.green[700],
       ),
       body: SafeArea(
@@ -194,25 +293,12 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // ✅ Surau Info 
-              _buildInfoCard("Surau Information", {
+              _buildInfoCard("Maklumat Surau", {
                 "Nama Surau": surauData?['surauName'] ?? '-',
                 "Alamat": surauData?['surauAddress'] ?? '-',
                 "Status": surauData?['status']?.toUpperCase() ?? '-',
               }),
-
-              // ✅ AJK Info
-              if (ajkData != null)
-                _buildInfoCard("AJK Information", {
-                  "Nama AJK": ajkData?['ajkName'] ?? '-',
-                  "No. IC": ajkData?['ic'] ?? '-',
-                  "No. Telefon": ajkData?['phone'] ?? '-',
-                  "Emel": ajkData?['email'] ?? '-',
-                }),
-
               const SizedBox(height: 30),
-
-              // ✅ Buttons section (bigger size)
               if (surauData?['status'] == "pending")
                 Column(
                   children: [

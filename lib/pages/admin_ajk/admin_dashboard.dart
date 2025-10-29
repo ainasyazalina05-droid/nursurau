@@ -92,7 +92,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_pageTitle),
+        centerTitle: true, // ✅ Centers the title
+        title: Text(
+          _pageTitle,
+          style: const TextStyle(
+            color: Colors.white, // ✅ Makes title white
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: const Color.fromARGB(255, 135, 172, 79),
         actions: [
           IconButton(

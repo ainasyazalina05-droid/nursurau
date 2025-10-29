@@ -50,8 +50,9 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white), // ✅ makes back arrow white
         title: const Text(
-          "OFFICER DASHBOARD",
+          "OFFICER PAID DASHBOARD",
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -151,14 +152,13 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                                   style: const TextStyle(color: Colors.white),
                                 ),
                                 onPressed: () {
-                                Navigator.push(
-                               context,
-                                MaterialPageRoute(
-                                builder: (_) =>status =="approved" 
-                                ?SurauDetailsPage(ajkId: docId)
-                                : ManageSurauPage(docId: docId),
-                                ),
-                                );
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          SurauDetailsPage(ajkId: docId),
+                                    ),
+                                  );
                                 },
                               ),
                             ),

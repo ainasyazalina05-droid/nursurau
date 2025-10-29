@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nursurau/pages/admin_paid/view_surau_page.dart';
 import 'manage_surau_page.dart';
 
 class SurauListPage extends StatelessWidget {
@@ -61,8 +62,7 @@ class SurauListPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            ManageSurauPage(docId: docSnapshot.id),
+                        builder: (_) => SurauDetailsPage(docId: docSnapshot.id),
                       ),
                     );
                   },
