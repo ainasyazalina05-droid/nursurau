@@ -40,7 +40,15 @@ class MyApp extends StatelessWidget {
       // home: const HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
       // home: const AdminReportsPage(), // Example page
-      // home: const PaidDashboard(),
+       //home: const PaidDashboard(),
+
+  //hosting {
+  //  "target": "surau",
+  //  "public": "build/web_surau",
+  //  "ignore": ["firebase.json", "/.", "/node_modules/*"],
+  //  "rewrites": [{"source": "", "destination": "/index.html"}]
+  // },
+
 
   //hosting {
   //  "target": "surau",

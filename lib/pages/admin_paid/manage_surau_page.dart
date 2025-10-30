@@ -1,142 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// 🕌 Halaman utama — senarai semua surau
-class ManageSurauPage extends StatelessWidget {
-  const ManageSurauPage({super.key});
-
-  Color _statusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'pending':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Surau"),
-        backgroundColor: Colors.green[700],
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('suraus').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                "Ralat: ${snapshot.error}",
-                style: const TextStyle(color: Colors.red),
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Tiada surau dijumpai"));
-          }
-
-          final surauList = snapshot.data!.docs;
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: surauList.length,
-            itemBuilder: (context, index) {
-              final data = surauList[index].data() as Map<String, dynamic>;
-              final docId = surauList[index].id;
-
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                child: ListTile(
-                  title: Text(
-                    data['surauName'] ?? 'Tanpa Nama',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Alamat: ${data['surauAddress'] ?? '-'}"),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Status: ${data['status'] ?? '-'}",
-                        style: TextStyle(
-                          color: _statusColor(data['status']),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 18,
-                    color: Colors.white, // ← make the arrow white
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            SurauDetailPage(docId: docId),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// 🧾 Halaman detail — info surau + fungsi approve / reject
-class SurauDetailPage extends StatefulWidget {
+class ManageSurauPage extends StatefulWidget {
   final String docId;
-  const SurauDetailPage({super.key, required this.docId});
+  const ManageSurauPage({super.key, required this.docId});
 
   @override
-  State<SurauDetailPage> createState() => _SurauDetailPageState();
+  State<ManageSurauPage> createState() => _ManageSurauPageState();
 }
 
-class _SurauDetailPageState extends State<SurauDetailPage> {
+class _ManageSurauPageState extends State<ManageSurauPage> {
   Map<String, dynamic>? surauData;
+  Map<String, dynamic>? ajkData;
   bool isLoading = true;
   String? errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _fetchSurauData();
+    _fetchFormData();
   }
 
-  /// 🔹 Ambil data surau berdasarkan docId
-  Future<void> _fetchSurauData() async {
+  Future<void> _fetchFormData() async {
     try {
-      final docSnap = await FirebaseFirestore.instance
-          .collection('suraus')
-          .doc(widget.docId)
-          .get();
+      final docRef = FirebaseFirestore.instance.collection('form').doc(widget.docId);
+      final formSnap = await docRef.get();
+      final ajkSnap = await docRef.collection('ajk').doc('ajk_data').get();
 
-      if (!docSnap.exists) {
-        throw Exception("Data surau tidak dijumpai.");
-      }
+      if (!formSnap.exists) throw Exception("Data surau tidak dijumpai.");
 
       setState(() {
-        surauData = docSnap.data();
+        surauData = formSnap.data();
+        ajkData = ajkSnap.data();
         isLoading = false;
       });
     } catch (e) {
@@ -147,26 +42,23 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
     }
   }
 
-  /// 🔹 Kemaskini status (approved / rejected)
   Future<void> _confirmAndUpdateStatus(String newStatus) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(newStatus == 'approved'
-            ? 'Sahkan Kelulusan'
-            : 'Sahkan Penolakan'),
+        title: Text(newStatus == 'approved' ? 'Sahkan Kelulusan' : 'Sahkan Penolakan'),
         content: Text(
           'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  newStatus == 'approved' ? Colors.green : Colors.red,
+              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
             ),
             child: const Text('Ya', style: TextStyle(color: Colors.white)),
           ),
@@ -176,10 +68,7 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
-            .collection('suraus')
-            .doc(widget.docId)
-            .update({'status': newStatus});
+        await FirebaseFirestore.instance.collection('form').doc(widget.docId).update({'status': newStatus});
 
         if (mounted) {
           setState(() {
@@ -188,8 +77,7 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Status telah dikemas kini kepada $newStatus'),
-              backgroundColor:
-                  newStatus == 'approved' ? Colors.green : Colors.red,
+              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
             ),
           );
         }
@@ -207,10 +95,8 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
         return Colors.green;
       case 'rejected':
         return Colors.red;
-      case 'pending':
-        return Colors.orange;
       default:
-        return Colors.grey;
+        return Colors.orange;
     }
   }
 
@@ -225,28 +111,17 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+            ),
             const Divider(),
-            ...info.entries.map((e) {
-              final isStatus = e.key.toLowerCase() == 'status';
-              return Padding(
+            ...info.entries.map(
+              (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  "${e.key} : ${e.value}",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isStatus ? FontWeight.bold : FontWeight.normal,
-                    color: isStatus
-                        ? _statusColor(e.value.toLowerCase())
-                        : Colors.black,
-                  ),
-                ),
-              );
-            }).toList(),
+                child: Text("${e.key} : ${e.value}", style: const TextStyle(fontSize: 16)),
+              ),
+            ),
           ],
         ),
       ),
@@ -264,8 +139,17 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Detail Surau"),
           backgroundColor: Colors.green[700],
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            "Manage Surau",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
         ),
         body: Center(
           child: Text(
@@ -285,56 +169,79 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Detail Surau"),
         backgroundColor: Colors.green[700],
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // anak panah putih
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Manage Surau",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true, // tajuk tengah
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildInfoCard("Maklumat Surau", {
                 "Nama Surau": surauData?['surauName'] ?? '-',
                 "Alamat": surauData?['surauAddress'] ?? '-',
-                "Status": surauData?['status']?.toUpperCase() ?? '-',
               }),
-              const SizedBox(height: 30),
-              if (surauData?['status'] == "pending")
-                Column(
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Status: ", style: TextStyle(fontSize: 16)),
+                  Text(
+                    surauData?['status']?.toUpperCase() ?? '-',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _statusColor(surauData?['status']),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              if (ajkData != null)
+                _buildInfoCard("Maklumat AJK", {
+                  "Nama AJK": ajkData?['ajkName'] ?? '-',
+                  "No. IC": ajkData?['ic'] ?? '-',
+                  "No. Telefon": ajkData?['phone'] ?? '-',
+                  "Emel": ajkData?['email'] ?? '-',
+                  "Kata Laluan": ajkData?['password'] ?? '-',
+                }),
+              const SizedBox(height: 40),
+
+              if ((surauData?['status'] ?? '') == "pending")
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _confirmAndUpdateStatus("approved"),
-                        label: const Text(
-                          "Approve",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[600],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmAndUpdateStatus("approved"),
+                      icon: const Icon(Icons.check_circle_outline, size: 28),
+                      label: const Text("Approve", style: TextStyle(fontSize: 18)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
-                    const SizedBox(height: 15),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _confirmAndUpdateStatus("rejected"),
-                        label: const Text(
-                          "Reject",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[600],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmAndUpdateStatus("rejected"),
+                      icon: const Icon(Icons.cancel_outlined, size: 28),
+                      label: const Text("Reject", style: TextStyle(fontSize: 18)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ],
