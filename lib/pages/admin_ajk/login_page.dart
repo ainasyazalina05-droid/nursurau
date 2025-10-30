@@ -35,6 +35,14 @@ class _LoginPageState extends State<LoginPage> {
 
       if (snapshot.exists) {
         final data = snapshot.data()!;
+         print("DATA LOGIN: $data"); 
+        if (data['status'] == 'blocked') {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Akaun anda telah disekat.")),
+  );
+  return; // stop login
+}
+
         if (data['password'] == password) {
           // ✅ Login success
           ScaffoldMessenger.of(context).showSnackBar(

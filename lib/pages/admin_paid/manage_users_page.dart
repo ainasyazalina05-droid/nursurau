@@ -11,17 +11,24 @@ class ManageUsersPage extends StatefulWidget {
 class _ManageUsersPageState extends State<ManageUsersPage> {
   final Color themeColor = const Color(0xFF2E7D32);
 
-  Future<void> updateRole(String username, String newRole) async {
+  Future<void> updateUserRoleAndStatus(String username, String newRole, {String? newStatus}) async {
     try {
-      await FirebaseFirestore.instance.collection('ajk_users').doc(username).update({
+      final updateData = {
         'role': newRole,
-      });
+        if (newStatus != null) 'status': newStatus,
+      };
+
+      await FirebaseFirestore.instance.collection('ajk_users').doc(username).update(updateData);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Peranan dikemas kini kepada $newRole")),
+        SnackBar(
+          content: Text("Peranan dikemas kini kepada $newRole${newStatus != null ? ' & status $newStatus' : ''}"),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat mengemas kini peranan: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("Ralat: $e"), backgroundColor: Colors.red),
       );
     }
   }
@@ -32,7 +39,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         'status': newStatus,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Status dikemas kini: $newStatus")),
+        SnackBar(content: Text("Status dikemas kini kepada $newStatus")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -110,12 +117,25 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                   trailing: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert, color: Colors.green),
                     onSelected: (value) async {
-                      if (value == 'delete') {
-                        await deleteUser(username);
-                      } else if (value == 'approve' || value == 'reject') {
-                        await updateStatus(username, value);
-                      } else {
-                        await updateRole(username, value);
+                      switch (value) {
+                        case 'ajk':
+                          await updateUserRoleAndStatus(username, 'ajk', newStatus: 'approved');
+                          break;
+                        case 'admin_paid':
+                          await updateUserRoleAndStatus(username, 'admin_paid', newStatus: 'approved');
+                          break;
+                        case 'blocked':
+                          await updateUserRoleAndStatus(username, role, newStatus: 'blocked');
+                          break;
+                        case 'approve':
+                          await updateStatus(username, 'approved');
+                          break;
+                        case 'reject':
+                          await updateStatus(username, 'rejected');
+                          break;
+                        case 'delete':
+                          await deleteUser(username);
+                          break;
                       }
                     },
                     itemBuilder: (context) => [
@@ -124,11 +144,13 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                       const PopupMenuItem(value: 'blocked', child: Text("Sekat Pengguna")),
                       const PopupMenuDivider(),
                       const PopupMenuItem(
-                          value: 'approve',
-                          child: Text("Approve", style: TextStyle(color: Colors.green))),
+                        value: 'approve',
+                        child: Text("Approve", style: TextStyle(color: Colors.green)),
+                      ),
                       const PopupMenuItem(
-                          value: 'reject',
-                          child: Text("Reject ", style: TextStyle(color: Colors.red))),
+                        value: 'reject',
+                        child: Text("Reject", style: TextStyle(color: Colors.red)),
+                      ),
                       const PopupMenuDivider(),
                       const PopupMenuItem(
                         value: 'delete',
@@ -152,9 +174,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
             title: const Text("Padam Pengguna"),
             content: Text("Adakah anda pasti untuk memadam '$username'?"),
             actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text("Batal")),
+              TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("Batal")),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
