@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:nursurau/firebase_options.dart';
 import 'package:nursurau/pages/admin_ajk/login_page.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
+// import 'package:nursurau/pages/admin_paid/paid.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

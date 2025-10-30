@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +22,7 @@ class _DonationPageState extends State<DonationPage> {
   final TextEditingController _qrUrlController = TextEditingController();
 
   File? _image;
+  Uint8List? _webImage; // ✅ for web image
   String? _surauId;
   bool _isLoading = true;
   bool _isUploading = false;
@@ -52,22 +55,33 @@ class _DonationPageState extends State<DonationPage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() => _image = File(pickedFile.path));
+      if (kIsWeb) {
+        _webImage = await pickedFile.readAsBytes();
+        _image = null;
+      } else {
+        _image = File(pickedFile.path);
+        _webImage = null;
+      }
+      setState(() {});
     }
   }
 
-  Future<String?> _uploadToCloudinary(File imageFile) async {
+  Future<String?> _uploadToCloudinary() async {
     const cloudName = 'dvrws03cg';
     const uploadPreset = 'unsigned_preset';
 
-    final uri =
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
-    final request = http.MultipartRequest('POST', uri)
-      ..fields['upload_preset'] = uploadPreset
-      ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+    final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final request = http.MultipartRequest('POST', uri)..fields['upload_preset'] = uploadPreset;
+
+    if (kIsWeb && _webImage != null) {
+      request.files.add(http.MultipartFile.fromBytes('file', _webImage!, filename: 'donation.jpg'));
+    } else if (_image != null) {
+      request.files.add(await http.MultipartFile.fromPath('file', _image!.path));
+    } else {
+      return null;
+    }
 
     try {
       final response = await request.send();
@@ -113,8 +127,8 @@ class _DonationPageState extends State<DonationPage> {
     setState(() => _isUploading = true);
 
     String? imageUrl;
-    if (_image != null) {
-      imageUrl = await _uploadToCloudinary(_image!);
+    if (_image != null || _webImage != null) {
+      imageUrl = await _uploadToCloudinary();
       if (imageUrl == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Gagal muat naik gambar.")),
@@ -147,7 +161,10 @@ class _DonationPageState extends State<DonationPage> {
       _descController.clear();
       _bankController.clear();
       _qrUrlController.clear();
-      setState(() => _image = null);
+      setState(() {
+        _image = null;
+        _webImage = null;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Ralat menambah sumbangan: $e")),
@@ -164,8 +181,8 @@ class _DonationPageState extends State<DonationPage> {
     setState(() => _isUploading = true);
 
     String? imageUrl;
-    if (_image != null) {
-      imageUrl = await _uploadToCloudinary(_image!);
+    if (_image != null || _webImage != null) {
+      imageUrl = await _uploadToCloudinary();
     }
 
     try {
@@ -241,6 +258,14 @@ class _DonationPageState extends State<DonationPage> {
                     label: const Text("Tukar Gambar (jika perlu)"),
                   ),
                 ),
+                if (_image != null || _webImage != null)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      '✅ Gambar dipilih',
+                      style: TextStyle(color: Color(0xFF87AC4F)),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -314,7 +339,6 @@ class _DonationPageState extends State<DonationPage> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 🔹 Add Donation Form like Posting Page
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Card(
@@ -322,7 +346,7 @@ class _DonationPageState extends State<DonationPage> {
               child: ExpansionTile(
                 title: const Text('Tambah Sumbangan Baru'),
                 iconColor: Colors.teal,
-                collapsedIconColor:  Color(0xFF808000),
+                collapsedIconColor: Color(0xFF87AC4F),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -338,16 +362,14 @@ class _DonationPageState extends State<DonationPage> {
                           controller: _descController,
                           maxLines: 3,
                           decoration: const InputDecoration(
-                              labelText: 'Penerangan',
-                              border: OutlineInputBorder()),
+                              labelText: 'Penerangan', border: OutlineInputBorder()),
                         ),
                         const SizedBox(height: 10),
                         TextField(
                           controller: _bankController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                              labelText: 'No Akaun Bank',
-                              border: OutlineInputBorder()),
+                              labelText: 'No Akaun Bank', border: OutlineInputBorder()),
                         ),
                         const SizedBox(height: 10),
                         TextField(
@@ -364,12 +386,12 @@ class _DonationPageState extends State<DonationPage> {
                             label: const Text('Pilih Gambar'),
                           ),
                         ),
-                        if (_image != null)
+                        if (_image != null || _webImage != null)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8.0),
                             child: Text(
                               '✅ Gambar dipilih',
-                              style: TextStyle(color: Color(0xFF808000)),
+                              style: TextStyle(color: Color(0xFF87AC4F)),
                             ),
                           ),
                         const SizedBox(height: 10),
@@ -380,8 +402,7 @@ class _DonationPageState extends State<DonationPage> {
                                 icon: const Icon(Icons.upload),
                                 label: const Text('Tambah Sumbangan'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color.fromARGB(
-                                      255, 135, 172, 79),
+                                  backgroundColor: Color(0xFF87AC4F),
                                   foregroundColor: Colors.white,
                                 ),
                               ),
@@ -394,8 +415,6 @@ class _DonationPageState extends State<DonationPage> {
             ),
           ),
           const Divider(),
-
-          // 🔹 Donation List
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('suraus')
@@ -424,8 +443,7 @@ class _DonationPageState extends State<DonationPage> {
                   final data = doc.data() as Map<String, dynamic>;
 
                   return Card(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 6),
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     elevation: 3,
                     child: ListTile(
                       leading: data['imageUrl'] != null
@@ -440,13 +458,11 @@ class _DonationPageState extends State<DonationPage> {
                                   ),
                                 );
                               },
-                              child: Image.network(data['imageUrl'],
-                                  width: 60, fit: BoxFit.cover),
+                              child: Image.network(data['imageUrl'], width: 60, fit: BoxFit.cover),
                             )
                           : const Icon(Icons.volunteer_activism, size: 40),
                       title: Text(data['title'] ?? "Tiada tajuk"),
-                      subtitle:
-                          Text("Akaun Bank: ${data['bankAccount'] ?? '-'}"),
+                      subtitle: Text("Akaun Bank: ${data['bankAccount'] ?? '-'}"),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

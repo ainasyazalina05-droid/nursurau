@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:nursurau/pages/admin_ajk/login_page.dart';
-import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
+// import 'package:nursurau/pages/admin_ajk/login_page.dart';
+//import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
+//import 'package:nursurau/pages/admin_paid/paid.dart';
 import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
-import 'package:nursurau/pages/admin_paid/report_page.dart';
+// import 'package:nursurau/pages/admin_paid/report_page.dart';
 import 'package:nursurau/pages/users/home_page.dart';
 import 'firebase_options.dart';
 
@@ -37,10 +37,10 @@ class MyApp extends StatelessWidget {
 
       // ✅ Choose the home screen you want to test:
       //home: LoginPage(), // Admin AJK login
-      home: const HomePage(), // User
+       home: const HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
       // home: const AdminReportsPage(), // Example page
-       //home: const PaidDashboard(),
+      //home: const PaidDashboard(),
 
   //hosting {
   //  "target": "surau",
