@@ -23,15 +23,11 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
   Future<void> _fetchFormData() async {
     try {
-      final docRef =
-          FirebaseFirestore.instance.collection('form').doc(widget.docId);
-
+      final docRef = FirebaseFirestore.instance.collection('form').doc(widget.docId);
       final formSnap = await docRef.get();
       final ajkSnap = await docRef.collection('ajk').doc('ajk_data').get();
 
-      if (!formSnap.exists) {
-        throw Exception("Data surau tidak dijumpai.");
-      }
+      if (!formSnap.exists) throw Exception("Data surau tidak dijumpai.");
 
       setState(() {
         surauData = formSnap.data();
@@ -50,27 +46,9 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Row(
-          children: [
-            Icon(
-              newStatus == 'approved'
-                  ? Icons.check_circle
-                  : Icons.cancel_outlined,
-              color:
-                  newStatus == 'approved' ? Colors.green[700] : Colors.red[700],
-            ),
-            const SizedBox(width: 10),
-            Text(
-              newStatus == 'approved'
-                  ? 'Sahkan Kelulusan'
-                  : 'Sahkan Penolakan',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+        title: Text(newStatus == 'approved' ? 'Sahkan Kelulusan' : 'Sahkan Penolakan'),
         content: Text(
-          'Adakah anda pasti mahu ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
+          'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
         ),
         actions: [
           TextButton(
@@ -80,9 +58,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  newStatus == 'approved' ? Colors.green[700] : Colors.red[700],
-              minimumSize: const Size(100, 45),
+              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
             ),
             child: const Text('Ya', style: TextStyle(color: Colors.white)),
           ),
@@ -92,10 +68,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
-            .collection('form')
-            .doc(widget.docId)
-            .update({'status': newStatus});
+        await FirebaseFirestore.instance.collection('form').doc(widget.docId).update({'status': newStatus});
 
         if (mounted) {
           setState(() {
@@ -103,9 +76,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Status dikemas kini kepada $newStatus'),
-              backgroundColor:
-                  newStatus == 'approved' ? Colors.green : Colors.red,
+              content: Text('Status telah dikemas kini kepada $newStatus'),
+              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
             ),
           );
         }
@@ -139,17 +111,17 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+            ),
             const Divider(),
-            ...info.entries.map((e) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text("${e.key} : ${e.value}",
-                      style: const TextStyle(fontSize: 16)),
-                ))
+            ...info.entries.map(
+              (e) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text("${e.key} : ${e.value}", style: const TextStyle(fontSize: 16)),
+              ),
+            ),
           ],
         ),
       ),
@@ -167,13 +139,23 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Manage Surau"),
           backgroundColor: Colors.green[700],
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            "Manage Surau",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
         ),
         body: Center(
           child: Text(
             "Ralat: $errorMessage",
             style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
           ),
         ),
       );
@@ -187,86 +169,85 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Manage Surau"),
         backgroundColor: Colors.green[700],
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // anak panah putih
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Manage Surau",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true, // tajuk tengah
       ),
-      backgroundColor: const Color(0xFFF2F7F3),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoCard("Maklumat Surau", {
-              "Nama Surau": surauData?['surauName'] ?? '-',
-              "Alamat": surauData?['surauAddress'] ?? '-',
-            }),
-            if (ajkData != null)
-              _buildInfoCard("Maklumat AJK", {
-                "Nama AJK": ajkData?['ajkName'] ?? '-',
-                "Email": ajkData?['email'] ?? '-',
-                "No. IC": ajkData?['ic'] ?? '-',
-                "No. Telefon": ajkData?['phone'] ?? '-',
-                "Kata Laluan": ajkData?['password'] ?? '-',
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoCard("Maklumat Surau", {
+                "Nama Surau": surauData?['surauName'] ?? '-',
+                "Alamat": surauData?['surauAddress'] ?? '-',
               }),
-            const SizedBox(height: 30),
-            Center(
-              child: Column(
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Text("Status: ", style: TextStyle(fontSize: 16)),
                   Text(
-                    "Status: ${surauData?['status']?.toUpperCase() ?? '-'}",
+                    surauData?['status']?.toUpperCase() ?? '-',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: _statusColor(surauData?['status']),
                     ),
                   ),
-                  const SizedBox(height: 25),
-
-                  // ✅ Butang Approve & Reject (Besar & kemas)
-                  if ((surauData?['status'] ?? '') == 'pending')
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () =>
-                              _confirmAndUpdateStatus("approved"),
-                          icon: const Icon(Icons.check_circle_outline, size: 26),
-                          label: const Text(
-                            "Approve",
-                            style: TextStyle(fontSize: 17),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green[600],
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(150, 55),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () =>
-                              _confirmAndUpdateStatus("rejected"),
-                          icon: const Icon(Icons.cancel_outlined, size: 26),
-                          label: const Text(
-                            "Reject",
-                            style: TextStyle(fontSize: 17),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[600],
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(150, 55),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+
+              if (ajkData != null)
+                _buildInfoCard("Maklumat AJK", {
+                  "Nama AJK": ajkData?['ajkName'] ?? '-',
+                  "No. IC": ajkData?['ic'] ?? '-',
+                  "No. Telefon": ajkData?['phone'] ?? '-',
+                  "Emel": ajkData?['email'] ?? '-',
+                  "Kata Laluan": ajkData?['password'] ?? '-',
+                }),
+              const SizedBox(height: 40),
+
+              if ((surauData?['status'] ?? '') == "pending")
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmAndUpdateStatus("approved"),
+                      icon: const Icon(Icons.check_circle_outline, size: 28),
+                      label: const Text("Approve", style: TextStyle(fontSize: 18)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmAndUpdateStatus("rejected"),
+                      icon: const Icon(Icons.cancel_outlined, size: 28),
+                      label: const Text("Reject", style: TextStyle(fontSize: 18)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
