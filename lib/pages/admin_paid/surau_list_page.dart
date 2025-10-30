@@ -1,10 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nursurau/pages/admin_paid/view_surau_page.dart';
+import 'manage_surau_page.dart';
 
 class SurauListPage extends StatelessWidget {
   final String filter;
   const SurauListPage({super.key, required this.filter});
+
+  // Tajuk ikut filter
+  String getTitle() {
+    switch (filter.toLowerCase()) {
+      case 'approved':
+        return 'Surau Diluluskan';
+      case 'pending':
+        return 'Surau Menunggu Kelulusan';
+      case 'rejected':
+        return 'Surau Ditolak';
+      default:
+        return 'Keseluruhan Surau';
+    }
+  }
+
+  // Tukar status ke BM
+  String translateStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'Diluluskan';
+      case 'pending':
+        return 'Menunggu Kelulusan';
+      case 'rejected':
+        return 'Ditolak';
+      default:
+        return status;
+    }
+  }
+
+  // Warna ikut status
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +57,18 @@ class SurauListPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text("Surau - ${filter.toUpperCase()}")),
+      appBar: AppBar(
+        backgroundColor: Colors.green,
+        title: Text(
+          getTitle(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: query.snapshots(),
         builder: (context, snapshot) {
@@ -26,7 +79,9 @@ class SurauListPage extends StatelessWidget {
           final docs = snapshot.data!.docs;
 
           if (docs.isEmpty) {
-            return const Center(child: Text("No surau found"));
+            return const Center(
+              child: Text("Tiada data surau tersedia"),
+            );
           }
 
           return ListView.builder(
@@ -37,34 +92,78 @@ class SurauListPage extends StatelessWidget {
                   (docSnapshot.data() as Map<String, dynamic>?) ?? {};
 
               final String name =
-                  (docData['surauName'] ?? 'Unnamed').toString();
+                  (docData['surauName'] ?? 'Tiada Nama').toString();
               final String status =
                   (docData['status'] ?? 'Unknown').toString();
               final String address =
                   (docData['address'] ?? '').toString();
 
               return Card(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
-                  title: Text(name),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  title: Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                      fontSize: 16,
+                    ),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (address.isNotEmpty) Text(address),
-                      Text("Status: $status"),
+                      if (address.isNotEmpty)
+                        Text(
+                          address,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: getStatusColor(status).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          translateStatus(status).toUpperCase(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: getStatusColor(status),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  isThreeLine: address.isNotEmpty,
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SurauDetailsPage(docId: docSnapshot.id),
+                  trailing: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ManageSurauPage(docId: docSnapshot.id),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.settings, size: 18),
+                    label: const Text("Urus Surau"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    );
-                  },
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                    ),
+                  ),
                 ),
               );
             },

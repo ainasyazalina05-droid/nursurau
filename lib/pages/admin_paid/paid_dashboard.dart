@@ -68,7 +68,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "PAID Dashboard",
+                    "Papan Pemuka Pejabat Agama Islam Daerah",
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -96,28 +96,28 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     children: [
                       _buildReportCard(
                         Icons.mosque,
-                        "All Suraus",
+                        "Keseluruhan Surau",
                         totalSuraus,
                         const Color(0xFF2E7D32),
                         onTap: () => _openAdminPage(context, "All"),
                       ),
                       _buildReportCard(
                         Icons.check_circle,
-                        "Approved",
+                        "Diluluskan",
                         approvedSuraus,
                         Colors.green.shade700,
                         onTap: () => _openAdminPage(context, "Approved"),
                       ),
                       _buildReportCard(
                         Icons.hourglass_bottom,
-                        "Pending",
+                        "Menunggu",
                         pendingSuraus,
                         Colors.orange.shade800,
                         onTap: () => _openAdminPage(context, "Pending"),
                       ),
                       _buildReportCard(
                         Icons.people,
-                        "Users",
+                        "Pengguna",
                         totalUsers,
                         Colors.teal.shade700,
                         onTap: () {
@@ -133,7 +133,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                   const SizedBox(height: 40),
 
                   const Text(
-                    "Surau Status Distribution",
+                    "Taburan Status Surau",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -220,14 +220,14 @@ class _PaidDashboardState extends State<PaidDashboard> {
             PieChartSectionData(
               color: Colors.green.shade600,
               value: (approved / total) * 100,
-              title: "Approved\n$approvedSuraus",
+              title: "Diluluskan\n$approvedSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),
             PieChartSectionData(
               color: Colors.orange.shade700,
               value: (pending / total) * 100,
-              title: "Pending\n$pendingSuraus",
+              title: "Menunggu\n$pendingSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),
