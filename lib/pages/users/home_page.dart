@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -21,8 +22,14 @@ class _HomePageState extends State<HomePage> {
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  Timer? _debounce;
 
   int _currentIndex = 1;
+  bool _isSearching = false;
+  bool _hasNewNotifications = false;
+
+  final Color _primaryColor = const Color(0xFF808000);
+  final Color _darkTextColor = const Color(0xFF3B3B3B);
 
   @override
   void initState() {
@@ -30,17 +37,6 @@ class _HomePageState extends State<HomePage> {
     _loadAvailableSuraus().then((_) => _loadFollowed());
     _searchController.addListener(_onSearchChanged);
     Future.delayed(Duration.zero, _setupPushNotifications);
-  }
-
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredSuraus = query.isEmpty
-          ? []
-          : _availableSuraus
-              .where((s) => (s['name'] ?? '').toLowerCase().contains(query))
-              .toList();
-    });
   }
 
   Future<void> _setupPushNotifications() async {
@@ -61,10 +57,9 @@ class _HomePageState extends State<HomePage> {
             'timestamp': FieldValue.serverTimestamp(),
           });
           if (mounted) {
+            setState(() => _hasNewNotifications = true);
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content:
-                      Text(message.notification?.title ?? 'Notifikasi baru')),
+              SnackBar(content: Text(message.notification?.title ?? 'Notifikasi baru')),
             );
           }
         }
@@ -74,10 +69,7 @@ class _HomePageState extends State<HomePage> {
         final surauId = message.data['ajkId'];
         final followedIds = _followed.map((s) => s['ajkId']).toList();
         if (followedIds.contains(surauId)) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => NotificationsPage()),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsPage()));
         }
       });
     } catch (e) {
@@ -102,9 +94,32 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadFollowed() async {
     final followedIds = await FollowService.loadFollowed();
     setState(() {
-      _followed =
-          _availableSuraus.where((s) => followedIds.contains(s['ajkId'])).toList();
+      _followed = _availableSuraus.where((s) => followedIds.contains(s['ajkId'])).toList();
     });
+  }
+
+  void _filterSuraus(String query) {
+    final q = query.toLowerCase();
+    setState(() {
+      _filteredSuraus = q.isEmpty
+          ? []
+          : _availableSuraus.where((s) => (s['name'] ?? '').toLowerCase().contains(q)).toList();
+    });
+  }
+
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    setState(() => _isSearching = _searchController.text.isNotEmpty);
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      _filterSuraus(_searchController.text);
+    });
+  }
+
+  void _handleNavTap(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsPage()));
+    if (index == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage()));
+    if (index == 3) Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage()));
   }
 
   void _openSurauDetails(Map<String, dynamic> surau) async {
@@ -115,159 +130,138 @@ class _HomePageState extends State<HomePage> {
     await _loadFollowed();
     _searchController.clear();
     _searchFocus.unfocus();
-    setState(() => _filteredSuraus = []);
+    setState(() {
+      _filteredSuraus.clear();
+      _isSearching = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEFE5D8),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            Column(
-              children: [
-                // Search Bar
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocus,
-                    decoration: InputDecoration(
-                      hintText: "Cari Surau...",
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF2F5D50)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+            CustomScrollView(
+              slivers: [
+                // 🌿 Redesigned Header + Search
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+                        ],
                       ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      // Followed Suraus Horizontal Scroll
-                      if (_followed.isNotEmpty)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "SURAU DIIKUTI",
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 220,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _followed.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 16),
-                                itemBuilder: (context, index) {
-                                  final s = _followed[index];
-                                  return SizedBox(
-                                    width: 200,
-                                    child: SurauCard(
-                                      title: s['name'] ?? '',
-                                      imagePath: s['image'] ?? '',
-                                      onTap: () => _openSurauDetails(s),
-                                    ),
-                                  );
-                                },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundImage: const AssetImage('assets/logo.png'),
+                                backgroundColor: _primaryColor.withOpacity(0.1),
                               ),
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 24),
-
-                      // Donation Banner
-                      GestureDetector(
-                        onTap: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const DonationsPage())),
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFB1E0C6), Color(0xFF8CC6A3)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: const [
-                              BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 6,
-                                  offset: Offset(2, 4))
-                            ],
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.volunteer_activism,
-                                  size: 48, color: Colors.brown),
-                              SizedBox(width: 16),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  "Ikhlas Beramal,\nIndah Bersama",
+                                  'NurSurau',
                                   style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: _darkTextColor,
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _handleNavTap(0),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Icon(Icons.notifications_outlined, size: 26, color: _darkTextColor),
+                                    if (_hasNewNotifications)
+                                      Positioned(
+                                        right: -2,
+                                        top: -2,
+                                        child: Container(
+                                          width: 9,
+                                          height: 9,
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 1.5),
+                                          ),
+                                        ),
+                                      )
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                          const SizedBox(height: 14),
+                          _buildSearchBar(),
+                        ],
                       ),
-                      const SizedBox(height: 24),
+                    ),
+                  ),
+                ),
 
-                      // Available Suraus List (single column)
-                      const Text(
-                        "SURAU TERSEDIA",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-                      ..._availableSuraus.map((s) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: SurauCard(
+                // 🕌 Followed + Available Surau Lists
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFollowedSection(),
+                        const SizedBox(height: 20),
+                        _buildDonationBanner(),
+                        const SizedBox(height: 20),
+                        const Text(
+                          "SURAU TERSEDIA:",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF4B4B4B),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ..._availableSuraus.map((s) => SurauCard(
                               title: s['name'] ?? '',
                               imagePath: s['image'] ?? '',
                               onTap: () => _openSurauDetails(s),
-                            ),
-                          )),
-                    ],
+                            )),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
 
-            // Search Suggestions
-            if (_filteredSuraus.isNotEmpty)
+            // 🔍 Search Results Overlay
+            if (_isSearching && _filteredSuraus.isNotEmpty)
               Positioned(
                 left: 16,
                 right: 16,
-                top: 90,
+                top: 130,
                 child: Material(
-                  color: Colors.white.withOpacity(0.95),
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(12),
                   child: ListView.builder(
                     shrinkWrap: true,
                     itemCount: _filteredSuraus.length,
                     itemBuilder: (context, index) {
                       final s = _filteredSuraus[index];
                       return ListTile(
-                        leading: s['image'] != ''
-                            ? CircleAvatar(
-                                backgroundImage: NetworkImage(s['image']))
-                            : const Icon(Icons.location_on),
-                        title: Text(s['name'] ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.w500)),
+                        leading: s['image'] != '' ? CircleAvatar(backgroundImage: NetworkImage(s['image'])) : null,
+                        title: Text(s['name'] ?? '', style: const TextStyle(color: Color(0xFF3B3B3B))),
                         onTap: () => _openSurauDetails(s),
                       );
                     },
@@ -277,97 +271,174 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+
+      // 🧭 Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFFF5E2B8),
+        backgroundColor: Colors.white,
         currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF2F5D50),
-        unselectedItemColor: Colors.black87,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-          if (index == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsPage()));
-          if (index == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage()));
-          if (index == 3) Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage()));
-        },
+        selectedItemColor: _primaryColor,
+        unselectedItemColor: Colors.grey.shade700,
+        type: BottomNavigationBarType.fixed,
+        onTap: _handleNavTap,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Notifikasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Utama"),
-          BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: "Donasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: "Bantuan"),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), label: "Notifikasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Utama"),
+          BottomNavigationBarItem(icon: Icon(Icons.volunteer_activism), label: "Donasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: "Bantuan"),
         ],
+      ),
+    );
+  }
+
+  // 🌿 Search Bar
+  Widget _buildSearchBar() {
+    return Focus(
+      onFocusChange: (_) => setState(() {}),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: _searchFocus.hasFocus ? Colors.white : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: _searchFocus.hasFocus ? _primaryColor : Colors.grey.shade300,
+            width: 1.4,
+          ),
+          boxShadow: _searchFocus.hasFocus
+              ? [BoxShadow(color: _primaryColor.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 3))]
+              : [const BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))],
+        ),
+        child: TextField(
+          controller: _searchController,
+          focusNode: _searchFocus,
+          decoration: InputDecoration(
+            hintText: 'Cari surau berdekatan...',
+            hintStyle: TextStyle(color: Colors.grey.shade500),
+            prefixIcon: Icon(Icons.search, color: _primaryColor),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    color: Colors.grey.shade600,
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _isSearching = false;
+                        _filteredSuraus.clear();
+                      });
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 💚 Followed Section
+  Widget _buildFollowedSection() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _primaryColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("SURAU DIIKUTI:",
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (_followed.isEmpty)
+            const Text("Tiada surau diikuti", style: TextStyle(color: Colors.white70))
+          else
+            ..._followed.map((s) => GestureDetector(
+                  onTap: () => _openSurauDetails(s),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: s['image'] != ''
+                            ? Image.network(s['image'], height: 180, width: double.infinity, fit: BoxFit.cover)
+                            : Image.asset('assets/surau1.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        s['name'] ?? '',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                )),
+        ],
+      ),
+    );
+  }
+
+  // 🤲 Donation Banner
+  Widget _buildDonationBanner() {
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage())),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F7),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2))],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.volunteer_activism, size: 40, color: Color(0xFF808000)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Ikhlas Beramal,\nIndah Bersama",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _darkTextColor),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+// 🕌 Surau Card
 class SurauCard extends StatelessWidget {
   final String title;
   final String imagePath;
   final VoidCallback onTap;
 
-  const SurauCard(
-      {super.key, required this.title, required this.imagePath, required this.onTap});
+  const SurauCard({super.key, required this.title, required this.imagePath, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: AspectRatio(
-          aspectRatio: 4 / 3,
-          child: Stack(
-            children: [
-              SizedBox.expand(
-                child: imagePath != '' &&
-                        (imagePath.startsWith('http') || imagePath.startsWith('https'))
-                    ? Image.network(
-                        imagePath,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Center(child: CircularProgressIndicator()),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) {
-                          return Image.asset('assets/surau1.jpg', fit: BoxFit.cover);
-                        },
-                      )
-                    : Image.asset('assets/surau1.jpg', fit: BoxFit.cover),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.black.withOpacity(0.35), Colors.transparent],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 12,
-                left: 12,
-                right: 12,
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      shadows: [
-                        Shadow(
-                            offset: Offset(0, 1), blurRadius: 2, color: Colors.black54)
-                      ]),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4B4B4B))),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: onTap,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: imagePath != '' && (imagePath.startsWith('http') || imagePath.startsWith('https'))
+                  ? Image.network(imagePath, height: 180, width: double.infinity, fit: BoxFit.cover)
+                  : Image.asset('assets/surau1.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
