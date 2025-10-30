@@ -121,9 +121,6 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                         case 'ajk':
                           await updateUserRoleAndStatus(username, 'ajk', newStatus: 'approved');
                           break;
-                        case 'admin_paid':
-                          await updateUserRoleAndStatus(username, 'admin_paid', newStatus: 'approved');
-                          break;
                         case 'blocked':
                           await updateUserRoleAndStatus(username, role, newStatus: 'blocked');
                           break;
@@ -140,7 +137,6 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                     },
                     itemBuilder: (context) => [
                       const PopupMenuItem(value: 'ajk', child: Text("Jadikan AJK")),
-                      const PopupMenuItem(value: 'admin_paid', child: Text("Jadikan Admin PAID")),
                       const PopupMenuItem(value: 'blocked', child: Text("Sekat Pengguna")),
                       const PopupMenuDivider(),
                       const PopupMenuItem(
