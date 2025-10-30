@@ -80,7 +80,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 0:
         return "Sumbangan";
       case 1:
-        return "Hebahan & Post";
+        return "Hebahan";
       case 2:
         return "Maklumat Surau";
       default:
