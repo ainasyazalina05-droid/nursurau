@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nursurau/services/follow_service.dart';
 import 'package:async/async.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nursurau/pages/users/surau_details_page.dart';
+import 'package:nursurau/services/follow_service.dart';
+import 'home_page.dart';
+import 'donations_page.dart';
+import 'help_page.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -13,11 +16,12 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
+  static const themeColor = Color(0xFF87AC4F); // unified app color 💚
+  int _currentIndex = 0;
+
   List<String> followedAjkIds = [];
   bool isLoading = true;
-
-  /// Locally hidden notifications (stored persistently)
-  Set<String> removedNotifs = {};
+  Set<String> removedNotifs = {}; // locally hidden notifications
 
   @override
   void initState() {
@@ -39,7 +43,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  /// Load removed notifications from SharedPreferences
   Future<void> _loadRemovedNotifs() async {
     final prefs = await SharedPreferences.getInstance();
     final ids = prefs.getStringList('removedNotifs') ?? [];
@@ -48,13 +51,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
   }
 
-  /// Save removed notifications to SharedPreferences
   Future<void> _saveRemovedNotifs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('removedNotifs', removedNotifs.toList());
   }
 
-  /// Remove from display and save locally
   void _removeNotif(String notifId) {
     setState(() {
       removedNotifs.add(notifId);
@@ -84,6 +85,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
   }
 
+  // ✅ unified navigation handler (shared with all pages)
+  void _handleNavTap(int index) {
+    if (index == _currentIndex) return;
+
+    setState(() => _currentIndex = index);
+    Widget nextPage;
+
+    switch (index) {
+      case 0:
+        nextPage = const NotificationsPage();
+        break;
+      case 1:
+        nextPage = const HomePage();
+        break;
+      case 2:
+        nextPage = const DonationsPage();
+        break;
+      case 3:
+        nextPage = const HelpPage();
+        break;
+      default:
+        nextPage = const HomePage();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => nextPage,
+        transitionDuration: const Duration(milliseconds: 250),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -95,22 +132,50 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (followedAjkIds.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Notifikasi"),
-          backgroundColor: const Color(0xFF808000),
-          centerTitle: true,
+          backgroundColor: themeColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          titleTextStyle: const TextStyle(), // Reset bold style
+          title: const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Notifikasi',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 20,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
         body: const Center(
-          child: Text("Anda belum mengikuti mana-mana surau."),
+          child: Text(
+            "Anda belum mengikuti mana-mana surau.",
+            style: TextStyle(fontSize: 16),
+          ),
         ),
+        bottomNavigationBar: _buildBottomNavBar(),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: const Color(0xFFF4F5F2),
       appBar: AppBar(
-        title: const Text("Notifikasi"),
-        backgroundColor: const Color(0xFF808000),
-        centerTitle: true,
+        backgroundColor: themeColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        titleTextStyle: const TextStyle(), // Reset bold style
+        title: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Notifikasi',
+            style: TextStyle(
+              fontWeight: FontWeight.w500, // not bold
+              fontSize: 20,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
       body: StreamBuilder<List<QueryDocumentSnapshot>>(
         stream: _getPostsStream(),
@@ -126,9 +191,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
 
           final posts = snapshot.data ?? [];
-          final visiblePosts = posts
-              .where((doc) => !removedNotifs.contains(doc.id))
-              .toList();
+          final visiblePosts =
+              posts.where((doc) => !removedNotifs.contains(doc.id)).toList();
 
           if (visiblePosts.isEmpty) {
             return const Center(
@@ -169,14 +233,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 onDismissed: (_) => _removeNotif(notifId),
                 child: Card(
                   color: Colors.white,
-                  elevation: 4,
+                  elevation: 3,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   margin: const EdgeInsets.only(bottom: 12),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 16),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -208,7 +272,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                             TextButton(
                               style: TextButton.styleFrom(
-                                backgroundColor: const Color(0xFF808000),
+                                backgroundColor: themeColor,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 6),
@@ -241,6 +305,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
           );
         },
       ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  // ✅ Shared bottom nav builder
+  BottomNavigationBar _buildBottomNavBar() {
+    return BottomNavigationBar(
+      backgroundColor: Colors.white,
+      currentIndex: _currentIndex,
+      selectedItemColor: themeColor,
+      unselectedItemColor: Colors.grey.shade700,
+      type: BottomNavigationBarType.fixed,
+      onTap: _handleNavTap,
+      items: const [
+        BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined), label: "Notifikasi"),
+        BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Utama"),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.volunteer_activism), label: "Donasi"),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline), label: "Bantuan"),
+      ],
     );
   }
 }
