@@ -15,7 +15,6 @@ Future<String> uploadToStorage(String localPath, String storagePath) async {
 /// Seeds NurSurau sample data into Firestore + Storage
 Future<void> seedNurSurauData() async {
   final firestore = FirebaseFirestore.instance;
-  final storage = FirebaseStorage.instance;
 
   // --- 1️⃣ Define sample suraus ---
   final surauList = [
