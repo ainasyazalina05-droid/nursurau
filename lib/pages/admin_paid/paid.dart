@@ -1,177 +1,158 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../admin_ajk/surau_details_page.dart';
+import 'manage_surau_page.dart';
 
 class AdminPaidPage extends StatefulWidget {
   final String filter;
-
-  const AdminPaidPage({super.key, this.filter = "Pending"});
+  const AdminPaidPage({super.key, required this.filter});
 
   @override
   State<AdminPaidPage> createState() => _AdminPaidPageState();
 }
 
 class _AdminPaidPageState extends State<AdminPaidPage> {
-  String selectedStatus = "Pending";
+  bool isLoading = true;
+  List<QueryDocumentSnapshot> surauList = [];
 
   @override
   void initState() {
     super.initState();
-    selectedStatus = widget.filter;
+    _fetchSuraus();
   }
 
-  Future<String> _getAjkName(String docId) async {
+  Future<void> _fetchSuraus() async {
     try {
-      final ajkDoc = await FirebaseFirestore.instance
-          .collection("form")
-          .doc(docId)
-          .collection("ajk")
-          .doc("ajk_data")
-          .get();
+      final firestore = FirebaseFirestore.instance;
+      Query query = firestore.collection('form');
 
-      return ajkDoc.data()?["ajkName"] ?? "-";
+      if (widget.filter == 'Approved') {
+        query = query.where('status', isEqualTo: 'approved');
+      } else if (widget.filter == 'Pending') {
+        query = query.where('status', isEqualTo: 'pending');
+      }
+
+      final snapshot = await query.get();
+
+      setState(() {
+        surauList = snapshot.docs;
+        isLoading = false;
+      });
     } catch (e) {
-      debugPrint("Error fetching AJK name: $e");
-      return "-";
+      debugPrint("Error fetching surau list: $e");
+      setState(() => isLoading = false);
     }
   }
 
-  Stream<QuerySnapshot> _getStream() {
-    final forms = FirebaseFirestore.instance.collection("form");
-    if (selectedStatus == "All") return forms.snapshots();
-    return forms
-        .where("status", isEqualTo: selectedStatus.toLowerCase())
-        .snapshots();
+  Color _statusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white), // ✅ makes back arrow white
-        title: const Text(
-          "OFFICER PAID DASHBOARD",
-          style: TextStyle(
+        backgroundColor: Colors.green[700],
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // putih confirm
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          "${widget.filter} Suraus",
+          style: const TextStyle(
+            color: Colors.white, // title putih
             fontWeight: FontWeight.bold,
-            color: Colors.white,
           ),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF2E7D32),
-        elevation: 3,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedStatus,
-                    dropdownColor: Colors.white,
-                    icon: const Icon(Icons.arrow_drop_down, color: Colors.green),
-                    items: const ['All', 'Pending', 'Approved', 'Rejected']
-                        .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(s),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => selectedStatus = value);
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _getStream(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : surauList.isEmpty
+              ? const Center(
+                  child: Text("Tiada data surau dijumpai."),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: surauList.length,
+                  itemBuilder: (context, index) {
+                    final surau = surauList[index].data() as Map<String, dynamic>;
+                    final docId = surauList[index].id;
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return Center(
-                      child: Text(
-                        "No $selectedStatus applications found.",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
+                    return Card(
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              surau['surauName'] ?? 'Nama tidak tersedia',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(surau['surauAddress'] ?? '-'),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  surau['status']?.toUpperCase() ?? '-',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _statusColor(surau['status']),
+                                  ),
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green[700],
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ManageSurauPage(docId: docId),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.settings),
+                                  label: const Text(
+                                    "Manage",
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     );
-                  }
-
-                  final docs = snapshot.data!.docs;
-
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final data = docs[index].data() as Map<String, dynamic>;
-                      final docId = docs[index].id;
-                      final status =
-                          (data["status"] ?? "").toString().toLowerCase();
-
-                      return FutureBuilder<String>(
-                        future: _getAjkName(docId),
-                        builder: (context, ajkSnapshot) {
-                          final ajkName = ajkSnapshot.data ?? "-";
-
-                          return Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: ListTile(
-                              title: Text(data["surauName"] ?? "No name"),
-                              subtitle: Text("AJK: $ajkName"),
-                              trailing: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2E7D32),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                                child: Text(
-                                  status == "approved" ? "View" : "Manage",
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          SurauDetailsPage(ajkId: docId),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+                  },
+                ),
     );
   }
 }

@@ -1,47 +1,274 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:nursurau/pages/admin_ajk/login_page.dart';
-import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
-import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
-import 'package:nursurau/pages/admin_paid/report_page.dart';
-import 'package:nursurau/pages/users/home_page.dart';
-import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// ✅ Handle background notifications
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("🔔 Background message: ${message.notification?.title}");
+class ManageSurauPage extends StatefulWidget {
+  final String docId;
+  const ManageSurauPage({super.key, required this.docId});
+
+  @override
+  State<ManageSurauPage> createState() => _ManageSurauPageState();
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+class _ManageSurauPageState extends State<ManageSurauPage> {
+  Map<String, dynamic>? surauData;
+  Map<String, dynamic>? ajkData;
+  bool isLoading = true;
+  String? errorMessage;
 
-  // ✅ Register background handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  @override
+  void initState() {
+    super.initState();
+    _fetchFormData();
+  }
 
-  runApp(const MyApp());
-}
+  Future<void> _fetchFormData() async {
+    try {
+      final docRef =
+          FirebaseFirestore.instance.collection('form').doc(widget.docId);
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+      final formSnap = await docRef.get();
+
+      // ambil subcollection AJK
+      final ajkSnap = await docRef
+          .collection('ajk')
+          .doc('ajk_data')
+          .get();
+
+      if (!formSnap.exists) throw Exception("Data surau tidak dijumpai.");
+
+      setState(() {
+        surauData = formSnap.data();
+        ajkData = ajkSnap.data();
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _confirmAndUpdateStatus(String newStatus) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          newStatus == 'approved'
+              ? 'Sahkan Kelulusan'
+              : 'Sahkan Penolakan',
+        ),
+        content: Text(
+          'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  newStatus == 'approved' ? Colors.green : Colors.red,
+            ),
+            child: const Text('Ya', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('form')
+            .doc(widget.docId)
+            .update({'status': newStatus});
+
+        if (mounted) {
+          setState(() {
+            surauData?['status'] = newStatus;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Status telah dikemas kini kepada $newStatus'),
+              backgroundColor:
+                  newStatus == 'approved' ? Colors.green : Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ralat: $e')),
+        );
+      }
+    }
+  }
+
+  Color _statusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  Widget _buildInfoCard(String title, Map<String, String> info) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green)),
+            const Divider(),
+            ...info.entries.map((e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text("${e.key} : ${e.value}",
+                      style: const TextStyle(fontSize: 16)),
+                ))
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "NurSurau",
-      theme: ThemeData(primarySwatch: Colors.green),
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-      // ✅ Choose the home screen you want to test:
-      //home: LoginPage(), // Admin AJK login
-       home: const HomePage(), // User
-      // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
-      // home: const AdminReportsPage(), // Example page
-      // home: const PaidDashboard(),
+    if (errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Manage Surau"),
+          backgroundColor: Colors.green[700],
+          iconTheme: const IconThemeData(color: Colors.white),
+          titleTextStyle: const TextStyle(
+              color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        body: Center(
+          child: Text(
+            "Ralat: $errorMessage",
+            style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
 
+    if (surauData == null) {
+      return const Scaffold(
+        body: Center(child: Text("Tiada data dijumpai")),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Manage Surau"),
+        backgroundColor: Colors.green[700],
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+            color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoCard("Maklumat Surau", {
+                "Nama Surau": surauData?['surauName'] ?? '-',
+                "Alamat": surauData?['surauAddress'] ?? '-',
+              }),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Status: ",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Text(
+                    surauData?['status']?.toUpperCase() ?? '-',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _statusColor(surauData?['status']),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              if (ajkData != null)
+                _buildInfoCard("Maklumat AJK", {
+                  "Nama AJK": ajkData?['ajkName'] ?? '-',
+                  "No. IC": ajkData?['ic'] ?? '-',
+                  "No. Telefon": ajkData?['phone'] ?? '-',
+                  "Emel": ajkData?['email'] ?? '-',
+                  "Kata Laluan": ajkData?['password'] ?? '-',
+                }),
+              const SizedBox(height: 40),
+
+              if ((surauData?['status'] ?? '') == "pending")
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          _confirmAndUpdateStatus("approved"),
+                      icon: const Icon(Icons.check_circle_outline, size: 28),
+                      label: const Text(
+                        "Approve",
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          _confirmAndUpdateStatus("rejected"),
+                      icon: const Icon(Icons.cancel_outlined, size: 28),
+                      label: const Text(
+                        "Reject",
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
