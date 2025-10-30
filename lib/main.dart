@@ -36,11 +36,27 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.green),
 
       // ✅ Choose the home screen you want to test:
-      //home: LoginPage(), // Admin AJK login
-       home: const HomePage(), // User
+      home: LoginPage(), // Admin AJK login
+      // home: const HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
       // home: const AdminReportsPage(), // Example page
-      // home: const PaidDashboard(),
+       //home: const PaidDashboard(),
+
+  //hosting {
+  //  "target": "surau",
+  //  "public": "build/web_surau",
+  //  "ignore": ["firebase.json", "/.", "/node_modules/*"],
+  //  "rewrites": [{"source": "", "destination": "/index.html"}]
+  // },
+
+
+  //hosting {
+  //  "target": "surau",
+  //  "public": "build/web_surau",
+  //  "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+  //  "rewrites": [{"source": "**", "destination": "/index.html"}]
+  // },
+
 
     );
   }

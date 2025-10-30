@@ -322,7 +322,7 @@ class _DonationPageState extends State<DonationPage> {
               child: ExpansionTile(
                 title: const Text('Tambah Sumbangan Baru'),
                 iconColor: Colors.teal,
-                collapsedIconColor: Colors.teal,
+                collapsedIconColor:  Color(0xFF808000),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -369,7 +369,7 @@ class _DonationPageState extends State<DonationPage> {
                             padding: EdgeInsets.symmetric(vertical: 8.0),
                             child: Text(
                               '✅ Gambar dipilih',
-                              style: TextStyle(color: Colors.green),
+                              style: TextStyle(color: Color(0xFF808000)),
                             ),
                           ),
                         const SizedBox(height: 10),

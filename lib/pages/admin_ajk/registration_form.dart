@@ -137,7 +137,7 @@ class _AjkRegisterFormState extends State<RegisterForm> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pendaftaran AJK Surau'),
-        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+        backgroundColor: Color(0xFF808000),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -253,7 +253,7 @@ class _AjkRegisterFormState extends State<RegisterForm> {
                     icon: const Icon(Icons.save),
                     label: const Text('Hantar'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+                      backgroundColor: Color(0xFF808000),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 40, vertical: 12),
                       textStyle: const TextStyle(

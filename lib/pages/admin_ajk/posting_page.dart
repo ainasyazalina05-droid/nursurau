@@ -242,7 +242,7 @@ class _PostingPageState extends State<PostingPage> {
           // 🔹 Borang Tambah Posting
           ExpansionTile(
             title: const Text('Tambah Posting Baru'),
-            iconColor: Colors.teal,
+            iconColor: Color(0xFF808000),
             collapsedIconColor: Colors.teal,
             children: [
               Padding(
@@ -325,8 +325,7 @@ class _PostingPageState extends State<PostingPage> {
                             icon: const Icon(Icons.upload),
                             label: const Text('Muat Naik Posting'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color.fromARGB(255, 135, 172, 79),
+                              backgroundColor: Color(0xFF808000),
                               foregroundColor: Colors.white,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 25),
