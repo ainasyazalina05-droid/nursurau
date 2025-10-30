@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_dashboard.dart';
-import 'registration_form.dart'; // ✅ Make sure this file name matches yours
+import 'registration_form.dart'; // Pastikan nama fail ini sama
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,7 +38,12 @@ class _LoginPageState extends State<LoginPage> {
         if (data['password'] == password) {
           // ✅ Login success
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Selamat datang ${data['surauName']}")),
+            const SnackBar(
+              content: Text(
+                "Selamat datang ke NurSurau! Semoga hari anda diberkati 🌿"
+              ),
+              duration: Duration(seconds: 3),
+            ),
           );
 
           Navigator.pushReplacement(
@@ -76,18 +81,28 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mosque,
-                  size: 80, color: Color.fromARGB(255, 135, 172, 79)),
-              const SizedBox(height: 20),
+
+              // Nama app
               const Text(
-                "Portal AJK Surau",
+                "Selamat datang ke Portal AJK NurSurau! 🌿",
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Color.fromARGB(255, 60, 60, 60),
+                  color: Color(0xFF808000),
                 ),
               ),
               const SizedBox(height: 30),
+
+              // ✅ Logo dari assets
+              Image.asset(
+                'assets/logo.png',
+                width: 200,
+                height: 200,
+              ),
+              const SizedBox(height: 15),
+
+
+              // Username field
               TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
@@ -97,6 +112,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 15),
+
+              // Password field
               TextField(
                 controller: _passwordController,
                 obscureText: true,
@@ -108,13 +125,12 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
 
-              // ✅ Login button
+              // Login button
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromARGB(255, 135, 172, 79),
+                        backgroundColor: const Color(0xFF808000),
                         minimumSize: const Size(double.infinity, 48),
                       ),
                       onPressed: _login,
@@ -123,10 +139,9 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
-
               const SizedBox(height: 20),
 
-              // ✅ Register navigation text button
+              // Register navigation
               TextButton(
                 onPressed: () {
                   Navigator.push(
@@ -139,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: const Text(
                   "Belum ada akaun? Daftar di sini",
                   style: TextStyle(
-                    color: Color.fromARGB(255, 135, 172, 79),
+                    color: Color(0xFF808000),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
