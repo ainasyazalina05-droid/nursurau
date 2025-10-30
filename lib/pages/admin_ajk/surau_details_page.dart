@@ -197,7 +197,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Icon(Icons.mosque,
-                          size: 70, color: Color(0xFF808000)),
+                          size: 70, color: Color(0xFF87AC4F)),
                       const SizedBox(height: 20),
 
                       // 🔹 Image preview

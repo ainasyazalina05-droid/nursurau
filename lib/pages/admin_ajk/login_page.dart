@@ -96,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF808000),
+                  color: Color(0xFF87AC4F),
                 ),
               ),
               const SizedBox(height: 30),
@@ -138,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF808000),
+                        backgroundColor: Color(0xFF87AC4F),
                         minimumSize: const Size(double.infinity, 48),
                       ),
                       onPressed: _login,
@@ -162,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: const Text(
                   "Belum ada akaun? Daftar di sini",
                   style: TextStyle(
-                    color: Color(0xFF808000),
+                    color: Color(0xFF87AC4F),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),

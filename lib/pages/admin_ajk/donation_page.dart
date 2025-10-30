@@ -263,7 +263,7 @@ class _DonationPageState extends State<DonationPage> {
                     padding: EdgeInsets.symmetric(vertical: 8.0),
                     child: Text(
                       '✅ Gambar dipilih',
-                      style: TextStyle(color: Color(0xFF808000)),
+                      style: TextStyle(color: Color(0xFF87AC4F)),
                     ),
                   ),
               ],
@@ -346,7 +346,7 @@ class _DonationPageState extends State<DonationPage> {
               child: ExpansionTile(
                 title: const Text('Tambah Sumbangan Baru'),
                 iconColor: Colors.teal,
-                collapsedIconColor: Color(0xFF808000),
+                collapsedIconColor: Color(0xFF87AC4F),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -391,7 +391,7 @@ class _DonationPageState extends State<DonationPage> {
                             padding: EdgeInsets.symmetric(vertical: 8.0),
                             child: Text(
                               '✅ Gambar dipilih',
-                              style: TextStyle(color: Color(0xFF808000)),
+                              style: TextStyle(color: Color(0xFF87AC4F)),
                             ),
                           ),
                         const SizedBox(height: 10),
@@ -402,8 +402,7 @@ class _DonationPageState extends State<DonationPage> {
                                 icon: const Icon(Icons.upload),
                                 label: const Text('Tambah Sumbangan'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color.fromARGB(
-                                      255, 135, 172, 79),
+                                  backgroundColor: Color(0xFF87AC4F),
                                   foregroundColor: Colors.white,
                                 ),
                               ),
