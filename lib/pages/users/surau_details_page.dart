@@ -27,19 +27,42 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
   Future<void> _toggleFollow() async {
     await FollowService.toggleFollowById(widget.ajkId);
     final followed = await FollowService.isFollowedById(widget.ajkId);
-
     setState(() => _isFollowed = followed);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(followed ? "Anda kini mengikuti" : "Anda berhenti mengikuti"),
+          content: Text(followed
+              ? "Anda kini mengikuti surau ini"
+              : "Anda berhenti mengikuti surau ini"),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: followed ? Colors.green.shade600 : Colors.grey.shade600,
+          backgroundColor:
+              followed ? const Color(0xFF808000) : Colors.grey.shade700,
         ),
       );
     }
+  }
+
+  /// Show full-size image in a zoomable dialog
+  void _showFullImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Container(
+          color: Colors.black.withOpacity(0.9),
+          child: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 1,
+              maxScale: 4,
+              child: Image.network(imageUrl, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -51,121 +74,211 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         .snapshots();
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFF4F5F2),
       appBar: AppBar(
         title: const Text('Maklumat Surau'),
-        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: const Color(0xFF808000),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: surauRef,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          if (snapshot.data!.docs.isEmpty) return const Center(child: Text("Surau tidak ditemui"));
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Surau tidak ditemui"));
+          }
 
           final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
 
           return SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Surau Banner Image
+                // Banner Section
                 Stack(
                   children: [
-                    Container(
-                      height: 220,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                        image: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
-                            ? DecorationImage(
-                                image: NetworkImage(data['imageUrl']),
-                                fit: BoxFit.cover,
+                    GestureDetector(
+                      onTap: () {
+                        if (data['imageUrl'] != null &&
+                            (data['imageUrl'] as String).isNotEmpty) {
+                          _showFullImage(data['imageUrl']);
+                        }
+                      },
+                      child: Container(
+                        height: 240,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          image: data['imageUrl'] != null &&
+                                  (data['imageUrl'] as String).isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(data['imageUrl']),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                          color: const Color(0xFFBCCF82),
+                        ),
+                        child: data['imageUrl'] == null ||
+                                (data['imageUrl'] as String).isEmpty
+                            ? const Center(
+                                child: Icon(Icons.mosque,
+                                    size: 100, color: Colors.white70),
                               )
                             : null,
-                        color: Colors.green.shade200,
                       ),
-                      child: data['imageUrl'] == null || (data['imageUrl'] as String).isEmpty
-                          ? const Icon(Icons.mosque, size: 100, color: Colors.green)
-                          : null,
                     ),
-                    // Gradient overlay for text readability
                     Container(
-                      height: 220,
+                      height: 240,
                       decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                         gradient: LinearGradient(
-                          colors: [Colors.black.withOpacity(0.3), Colors.transparent],
+                          colors: [
+                            Colors.black.withOpacity(0.5),
+                            Colors.transparent
+                          ],
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                         ),
                       ),
                     ),
-                    // Surau info
                     Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
+                      bottom: 20,
+                      left: 20,
+                      right: 20,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             data['name'] ?? '',
                             style: const TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black38,
+                                  offset: Offset(1, 1),
+                                  blurRadius: 4,
+                                )
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            data['address'] ?? '',
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
-                          ),
-                          const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.person, size: 16, color: Colors.white70),
+                              const Icon(Icons.place,
+                                  color: Colors.white70, size: 16),
                               const SizedBox(width: 4),
-                              Text(data['nazirName'] ?? '', style: const TextStyle(color: Colors.white70)),
-                              const SizedBox(width: 12),
-                              const Icon(Icons.phone, size: 16, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Text(data['nazirPhone'] ?? '', style: const TextStyle(color: Colors.white70)),
+                              Expanded(
+                                child: Text(
+                                  data['address'] ?? '',
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14),
+                                ),
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    // Follow button
                     Positioned(
                       top: 16,
                       right: 16,
                       child: ElevatedButton.icon(
                         onPressed: _toggleFollow,
-                        icon: Icon(_isFollowed ? Icons.check : Icons.add, size: 20),
+                        icon: Icon(
+                          _isFollowed ? Icons.check : Icons.add,
+                          size: 18,
+                        ),
                         label: Text(_isFollowed ? "Mengikuti" : "Ikut"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isFollowed ? Colors.green.shade600 : Colors.white,
-                          foregroundColor: _isFollowed ? Colors.white : Colors.green.shade600,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          backgroundColor:
+                              _isFollowed ? const Color(0xFF808000) : Colors.white,
+                          foregroundColor:
+                              _isFollowed ? Colors.white : const Color(0xFF808000),
+                          elevation: 3,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
-                            side: BorderSide(color: Colors.green.shade600, width: 1.2),
+                            side: BorderSide(
+                                color: const Color(0xFF808000), width: 1.2),
                           ),
-                          elevation: 4,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 20),
+
+                // Nazir Info
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: const Color(0xFF808000).withOpacity(0.1),
+                        child: const Icon(Icons.person,
+                            color: Color(0xFF808000), size: 30),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              data['nazirName'] ?? 'Tidak diketahui',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.phone,
+                                    color: Colors.grey, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  data['nazirPhone'] ?? '-',
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
 
                 // Posting Surau Section
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    "Posting Surau",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Posting Surau",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -173,17 +286,23 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                       .where('ajkId', isEqualTo: widget.ajkId)
                       .snapshots(),
                   builder: (context, postSnap) {
-                    if (postSnap.hasError) return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Ralat memuatkan posting.'),
-                    );
-                    if (!postSnap.hasData) return const Center(child: CircularProgressIndicator());
+                    if (postSnap.hasError) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Ralat memuatkan posting.'),
+                      );
+                    }
+                    if (!postSnap.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
                     final posts = postSnap.data!.docs;
-                    if (posts.isEmpty) return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text("Tiada posting setakat ini"),
-                    );
+                    if (posts.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text("Tiada posting setakat ini."),
+                      );
+                    }
 
                     return Column(
                       children: posts.map((doc) {
@@ -193,14 +312,15 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                             : null;
 
                         return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
-                                blurRadius: 6,
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
                             ],
@@ -208,14 +328,19 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty)
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                  child: Image.network(
-                                    p['imageUrl'],
-                                    height: 180,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
+                              if (p['imageUrl'] != null &&
+                                  (p['imageUrl'] as String).isNotEmpty)
+                                GestureDetector(
+                                  onTap: () => _showFullImage(p['imageUrl']),
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(18)),
+                                    child: Image.network(
+                                      p['imageUrl'],
+                                      height: 180,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                               Padding(
@@ -225,10 +350,12 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                                   children: [
                                     if (p['category'] != null)
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: Colors.green.shade200,
-                                          borderRadius: BorderRadius.circular(12),
+                                          color: const Color(0xFF808000),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           p['category'],
@@ -241,18 +368,32 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                                     const SizedBox(height: 8),
                                     Text(
                                       p['title'] ?? '',
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
                                       p['description'] ?? '',
-                                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                          height: 1.4),
                                     ),
                                     const SizedBox(height: 10),
                                     if (ts != null)
-                                      Text(
-                                        "${ts.day}/${ts.month}/${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}",
-                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.access_time,
+                                              size: 14, color: Colors.grey),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            "${ts.day}/${ts.month}/${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}",
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey),
+                                          ),
+                                        ],
                                       ),
                                   ],
                                 ),
@@ -264,7 +405,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
               ],
             ),
           );

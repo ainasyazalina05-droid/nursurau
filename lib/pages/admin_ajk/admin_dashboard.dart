@@ -48,7 +48,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+                backgroundColor:  Color(0xFF808000),
               ),
               onPressed: () {
                 Navigator.pop(context); // Close dialog
@@ -80,7 +80,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 0:
         return "Sumbangan";
       case 1:
-        return "Hebahan & Post";
+        return "Hebahan";
       case 2:
         return "Maklumat Surau";
       default:
@@ -100,7 +100,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color.fromARGB(255, 135, 172, 79),
+        backgroundColor:  Color(0xFF808000),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -114,7 +114,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         backgroundColor: Colors.white,
-        selectedItemColor: const Color.fromARGB(255, 135, 172, 79),
+        selectedItemColor:  Color(0xFF808000),
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(

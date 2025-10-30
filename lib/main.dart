@@ -50,6 +50,14 @@ class MyApp extends StatelessWidget {
   // },
 
 
+  //hosting {
+  //  "target": "surau",
+  //  "public": "build/web_surau",
+  //  "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+  //  "rewrites": [{"source": "**", "destination": "/index.html"}]
+  // },
+
+
     );
   }
 }

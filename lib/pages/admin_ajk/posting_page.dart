@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +21,7 @@ class _PostingPageState extends State<PostingPage> {
   final TextEditingController _descController = TextEditingController();
   String? _selectedCategory;
   File? _image;
+  Uint8List? _webImage; // ✅ for web image
   bool _isUploading = false;
 
   final List<String> _categories = [
@@ -32,19 +35,31 @@ class _PostingPageState extends State<PostingPage> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() => _image = File(picked.path));
+      if (kIsWeb) {
+        _webImage = await picked.readAsBytes();
+        _image = null;
+      } else {
+        _image = File(picked.path);
+        _webImage = null;
+      }
+      setState(() {});
     }
   }
 
-  Future<String?> _uploadToCloudinary(File image) async {
+  Future<String?> _uploadToCloudinary() async {
     const cloudName = 'dvrws03cg';
     const uploadPreset = 'unsigned_preset';
 
-    final url =
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
-    final request = http.MultipartRequest('POST', url)
-      ..fields['upload_preset'] = uploadPreset
-      ..files.add(await http.MultipartFile.fromPath('file', image.path));
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final request = http.MultipartRequest('POST', url)..fields['upload_preset'] = uploadPreset;
+
+    if (kIsWeb && _webImage != null) {
+      request.files.add(http.MultipartFile.fromBytes('file', _webImage!, filename: 'posting.jpg'));
+    } else if (_image != null) {
+      request.files.add(await http.MultipartFile.fromPath('file', _image!.path));
+    } else {
+      return null;
+    }
 
     final response = await request.send();
     final responseData = await response.stream.bytesToString();
@@ -70,8 +85,8 @@ class _PostingPageState extends State<PostingPage> {
 
     setState(() => _isUploading = true);
     String? imageUrl;
-    if (_image != null) {
-      imageUrl = await _uploadToCloudinary(_image!);
+    if (_image != null || _webImage != null) {
+      imageUrl = await _uploadToCloudinary();
     }
 
     await _firestore.collection('posts').add({
@@ -86,6 +101,7 @@ class _PostingPageState extends State<PostingPage> {
     setState(() {
       _isUploading = false;
       _image = null;
+      _webImage = null;
       _titleController.clear();
       _descController.clear();
       _selectedCategory = null;
@@ -99,8 +115,8 @@ class _PostingPageState extends State<PostingPage> {
   Future<void> _updatePost(String postId) async {
     setState(() => _isUploading = true);
     String? imageUrl;
-    if (_image != null) {
-      imageUrl = await _uploadToCloudinary(_image!);
+    if (_image != null || _webImage != null) {
+      imageUrl = await _uploadToCloudinary();
     }
 
     await _firestore.collection('posts').doc(postId).update({
@@ -113,6 +129,7 @@ class _PostingPageState extends State<PostingPage> {
     setState(() {
       _isUploading = false;
       _image = null;
+      _webImage = null;
       _titleController.clear();
       _descController.clear();
       _selectedCategory = null;
@@ -127,6 +144,8 @@ class _PostingPageState extends State<PostingPage> {
     _titleController.text = data['title'] ?? '';
     _descController.text = data['description'] ?? '';
     _selectedCategory = data['category'];
+    _image = null;
+    _webImage = null;
 
     showDialog(
       context: context,
@@ -166,16 +185,32 @@ class _PostingPageState extends State<PostingPage> {
                     label: const Text("Tukar Gambar (jika perlu)"),
                   ),
                 ),
+                const SizedBox(height: 10),
                 if (_image != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _image!,
-                        height: 150,
-                        fit: BoxFit.cover,
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _image!,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                if (_webImage != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      _webImage!,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                if (_image == null && _webImage == null && data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      data['imageUrl'],
+                      height: 150,
+                      fit: BoxFit.cover,
                     ),
                   ),
               ],
@@ -242,7 +277,7 @@ class _PostingPageState extends State<PostingPage> {
           // 🔹 Borang Tambah Posting
           ExpansionTile(
             title: const Text('Tambah Posting Baru'),
-            iconColor: Colors.teal,
+            iconColor: Color(0xFF808000),
             collapsedIconColor: Colors.teal,
             children: [
               Padding(
@@ -276,7 +311,7 @@ class _PostingPageState extends State<PostingPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // 🖼️ Friendlier Web Upload Section
+                    // 🖼️ Friendly Web/Mobile Image Section
                     Center(
                       child: Column(
                         children: [
@@ -290,21 +325,32 @@ class _PostingPageState extends State<PostingPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 color: Colors.grey[100],
                               ),
-                              child: _image == null
-                                  ? const Center(
-                                      child: Text(
-                                        'Klik di sini untuk pilih gambar',
-                                        style: TextStyle(color: Colors.black54),
-                                      ),
-                                    )
-                                  : ClipRRect(
+                              child: _image != null
+                                  ? ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: Image.file(
                                         _image!,
                                         fit: BoxFit.cover,
                                         width: double.infinity,
                                       ),
-                                    ),
+                                    )
+                                  : _webImage != null
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: Image.memory(
+                                            _webImage!,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Text(
+                                            'Klik di sini untuk pilih gambar',
+                                            style: TextStyle(
+                                                color: Colors.black54),
+                                          ),
+                                        ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -325,8 +371,7 @@ class _PostingPageState extends State<PostingPage> {
                             icon: const Icon(Icons.upload),
                             label: const Text('Muat Naik Posting'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color.fromARGB(255, 135, 172, 79),
+                              backgroundColor: Color(0xFF808000),
                               foregroundColor: Colors.white,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 25),

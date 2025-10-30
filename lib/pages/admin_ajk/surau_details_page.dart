@@ -180,7 +180,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = const Color.fromARGB(255, 135, 172, 79);
+    final themeColor = Color(0xFF808000);
 
     return Scaffold(
       body: _isLoading
@@ -197,7 +197,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Icon(Icons.mosque,
-                          size: 70, color: Color.fromARGB(255, 135, 172, 79)),
+                          size: 70, color: Color(0xFF808000)),
                       const SizedBox(height: 20),
 
                       // 🔹 Image preview

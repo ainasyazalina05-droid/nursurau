@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nursurau/services/follow_service.dart';
 import 'package:async/async.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nursurau/pages/users/surau_details_page.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -15,13 +16,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<String> followedAjkIds = [];
   bool isLoading = true;
 
-  // Optional: store last visit timestamp to highlight new posts
-  DateTime lastVisit = DateTime.now().subtract(const Duration(days: 1));
+  /// Locally hidden notifications (stored persistently)
+  Set<String> removedNotifs = {};
 
   @override
   void initState() {
     super.initState();
     _loadFollowedAjkIds();
+    _loadRemovedNotifs();
   }
 
   Future<void> _loadFollowedAjkIds() async {
@@ -37,27 +39,47 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  /// Load removed notifications from SharedPreferences
+  Future<void> _loadRemovedNotifs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList('removedNotifs') ?? [];
+    setState(() {
+      removedNotifs = ids.toSet();
+    });
+  }
+
+  /// Save removed notifications to SharedPreferences
+  Future<void> _saveRemovedNotifs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('removedNotifs', removedNotifs.toList());
+  }
+
+  /// Remove from display and save locally
+  void _removeNotif(String notifId) {
+    setState(() {
+      removedNotifs.add(notifId);
+    });
+    _saveRemovedNotifs();
+  }
+
   Stream<List<QueryDocumentSnapshot>> _getPostsStream() {
     if (followedAjkIds.isEmpty) return const Stream.empty().map((_) => []);
 
     final streams = followedAjkIds.map((ajkId) {
       return FirebaseFirestore.instance
           .collection('posts')
-          .where('ajkId', isEqualTo: ajkId) // only filter by ajkId
+          .where('ajkId', isEqualTo: ajkId)
           .snapshots()
           .map((snapshot) => snapshot.docs);
     });
 
     return StreamZip(streams).map((listOfDocs) {
       final allPosts = listOfDocs.expand((x) => x).toList();
-
-      // Sort posts in Flutter by timestamp descending
       allPosts.sort((a, b) {
         final t1 = (a['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
         final t2 = (b['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
         return t2.compareTo(t1);
       });
-
       return allPosts;
     });
   }
@@ -72,7 +94,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     if (followedAjkIds.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Notifikasi")),
+        appBar: AppBar(
+          title: const Text("Notifikasi"),
+          backgroundColor: const Color(0xFF808000),
+          centerTitle: true,
+        ),
         body: const Center(
           child: Text("Anda belum mengikuti mana-mana surau."),
         ),
@@ -80,7 +106,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Notifikasi")),
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text("Notifikasi"),
+        backgroundColor: const Color(0xFF808000),
+        centerTitle: true,
+      ),
       body: StreamBuilder<List<QueryDocumentSnapshot>>(
         stream: _getPostsStream(),
         builder: (context, snapshot) {
@@ -95,71 +126,114 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
 
           final posts = snapshot.data ?? [];
+          final visiblePosts = posts
+              .where((doc) => !removedNotifs.contains(doc.id))
+              .toList();
 
-          if (posts.isEmpty) {
-            return const Center(child: Text("Tiada notifikasi baru."));
+          if (visiblePosts.isEmpty) {
+            return const Center(
+              child: Text(
+                "Tiada notifikasi.",
+                style: TextStyle(fontSize: 16),
+              ),
+            );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: posts.length,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            itemCount: visiblePosts.length,
             itemBuilder: (context, index) {
-              final data = posts[index].data() as Map<String, dynamic>;
+              final data = visiblePosts[index].data() as Map<String, dynamic>;
               final title = data['title'] ?? 'Tiada tajuk';
               final desc = data['description'] ?? '';
-              final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+              final timestamp =
+                  (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
               final ajkId = data['ajkId'] ?? '';
+              final notifId = visiblePosts[index].id;
 
-              final isNew = timestamp.isAfter(lastVisit);
-
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+              return Dismissible(
+                key: ValueKey(notifId),
+                direction: DismissDirection.horizontal,
+                background: Container(
+                  color: Colors.red.shade400,
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 24),
+                  child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                child: ListTile(
-                  onTap: () {
-                    // Navigate to SurauDetailsPage
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SurauDetailsPage(ajkId: ajkId),
-                      ),
-                    );
-                  },
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  title: Row(
-                    children: [
-                      if (isNew)
-                        Container(
-                          width: 10,
-                          height: 10,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
+                secondaryBackground: Container(
+                  color: Colors.red.shade400,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 24),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                onDismissed: (_) => _removeNotif(notifId),
+                child: Card(
+                  color: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        const SizedBox(height: 6),
+                        Text(
+                          desc,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade800,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(desc),
-                  trailing: Text(
-                    "${timestamp.day}/${timestamp.month}/${timestamp.year}",
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "${timestamp.day}/${timestamp.month}/${timestamp.year}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFF808000),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        SurauDetailsPage(ajkId: ajkId),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "Lihat",
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
