@@ -21,7 +21,7 @@ class _PostingPageState extends State<PostingPage> {
   final TextEditingController _descController = TextEditingController();
   String? _selectedCategory;
   File? _image;
-  Uint8List? _webImage; // ✅ for web image
+  Uint8List? _webImage;
   bool _isUploading = false;
 
   final List<String> _categories = [
@@ -49,26 +49,37 @@ class _PostingPageState extends State<PostingPage> {
   Future<String?> _uploadToCloudinary() async {
     const cloudName = 'dvrws03cg';
     const uploadPreset = 'unsigned_preset';
-
     final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+
     final request = http.MultipartRequest('POST', url)..fields['upload_preset'] = uploadPreset;
 
-    if (kIsWeb && _webImage != null) {
-      request.files.add(http.MultipartFile.fromBytes('file', _webImage!, filename: 'posting.jpg'));
-    } else if (_image != null) {
-      request.files.add(await http.MultipartFile.fromPath('file', _image!.path));
-    } else {
-      return null;
-    }
+    try {
+      if (kIsWeb && _webImage != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes('file', _webImage!, filename: 'posting.jpg'),
+        );
+      } else if (_image != null) {
+        request.files.add(await http.MultipartFile.fromPath('file', _image!.path));
+      } else {
+        debugPrint('❌ Tiada gambar untuk diupload');
+        return null;
+      }
 
-    final response = await request.send();
-    final responseData = await response.stream.bytesToString();
+      debugPrint('🔄 Menghantar gambar ke Cloudinary...');
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      debugPrint('Cloudinary response: $responseData');
 
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(responseData);
-      return jsonData['secure_url'];
-    } else {
-      debugPrint('Upload failed: ${response.reasonPhrase}');
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(responseData);
+        debugPrint('✅ Upload berjaya: ${jsonData['secure_url']}');
+        return jsonData['secure_url'];
+      } else {
+        debugPrint('❌ Upload gagal: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ Ralat semasa upload: $e');
       return null;
     }
   }
@@ -89,27 +100,35 @@ class _PostingPageState extends State<PostingPage> {
       imageUrl = await _uploadToCloudinary();
     }
 
-    await _firestore.collection('posts').add({
-      'ajkId': widget.ajkId,
-      'title': _titleController.text,
-      'description': _descController.text,
-      'category': _selectedCategory,
-      'imageUrl': imageUrl ?? '',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    try {
+      await _firestore.collection('posts').add({
+        'ajkId': widget.ajkId,
+        'title': _titleController.text,
+        'description': _descController.text,
+        'category': _selectedCategory,
+        'imageUrl': imageUrl ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-    setState(() {
-      _isUploading = false;
-      _image = null;
-      _webImage = null;
-      _titleController.clear();
-      _descController.clear();
-      _selectedCategory = null;
-    });
+      setState(() {
+        _isUploading = false;
+        _image = null;
+        _webImage = null;
+        _titleController.clear();
+        _descController.clear();
+        _selectedCategory = null;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Berjaya muat naik posting!')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Berjaya muat naik posting!')),
+      );
+    } catch (e) {
+      debugPrint('❌ Ralat tambah post: $e');
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ralat: $e')),
+      );
+    }
   }
 
   Future<void> _updatePost(String postId) async {
@@ -119,25 +138,33 @@ class _PostingPageState extends State<PostingPage> {
       imageUrl = await _uploadToCloudinary();
     }
 
-    await _firestore.collection('posts').doc(postId).update({
-      'title': _titleController.text.trim(),
-      'description': _descController.text.trim(),
-      'category': _selectedCategory,
-      if (imageUrl != null) 'imageUrl': imageUrl,
-    });
+    try {
+      await _firestore.collection('posts').doc(postId).update({
+        'title': _titleController.text.trim(),
+        'description': _descController.text.trim(),
+        'category': _selectedCategory,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+      });
 
-    setState(() {
-      _isUploading = false;
-      _image = null;
-      _webImage = null;
-      _titleController.clear();
-      _descController.clear();
-      _selectedCategory = null;
-    });
+      setState(() {
+        _isUploading = false;
+        _image = null;
+        _webImage = null;
+        _titleController.clear();
+        _descController.clear();
+        _selectedCategory = null;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Posting berjaya dikemaskini!')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Posting berjaya dikemaskini!')),
+      );
+    } catch (e) {
+      debugPrint('❌ Ralat update post: $e');
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ralat: $e')),
+      );
+    }
   }
 
   void _editPost(String postId, Map<String, dynamic> data) {
@@ -149,88 +176,66 @@ class _PostingPageState extends State<PostingPage> {
 
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Kemaskini Posting"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                      labelText: "Tajuk", border: OutlineInputBorder()),
+      builder: (context) => AlertDialog(
+        title: const Text("Kemaskini Posting"),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: "Tajuk", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _descController,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: "Keterangan", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: "Kategori", border: OutlineInputBorder()),
+                value: _selectedCategory,
+                onChanged: (val) => setState(() => _selectedCategory = val),
+                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.image),
+                  label: const Text("Tukar Gambar (jika perlu)"),
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _descController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                      labelText: "Keterangan", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              if (_image != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(_image!, height: 150, fit: BoxFit.cover),
                 ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                      labelText: "Kategori", border: OutlineInputBorder()),
-                  value: _selectedCategory,
-                  onChanged: (val) => setState(() => _selectedCategory = val),
-                  items: _categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
+              if (_webImage != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(_webImage!, height: 150, fit: BoxFit.cover),
                 ),
-                const SizedBox(height: 10),
-                Center(
-                  child: ElevatedButton.icon(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.image),
-                    label: const Text("Tukar Gambar (jika perlu)"),
-                  ),
+              if (_image == null && _webImage == null && data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(data['imageUrl'], height: 150, fit: BoxFit.cover),
                 ),
-                const SizedBox(height: 10),
-                if (_image != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _image!,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                if (_webImage != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(
-                      _webImage!,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                if (_image == null && _webImage == null && data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      data['imageUrl'],
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Batal"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _updatePost(postId);
-              },
-              child: const Text("Simpan"),
-            ),
-          ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _updatePost(postId);
+            },
+            child: const Text("Simpan"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -241,10 +246,7 @@ class _PostingPageState extends State<PostingPage> {
         title: const Text("Sahkan Padam"),
         content: const Text("Adakah anda pasti ingin memadam posting ini?"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Batal"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -274,7 +276,7 @@ class _PostingPageState extends State<PostingPage> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // 🔹 Borang Tambah Posting
+          // Borang Tambah Posting
           ExpansionTile(
             title: const Text('Tambah Posting Baru'),
             iconColor: Color(0xFF87AC4F),
@@ -286,32 +288,22 @@ class _PostingPageState extends State<PostingPage> {
                   children: [
                     TextField(
                       controller: _titleController,
-                      decoration: const InputDecoration(
-                          labelText: 'Tajuk', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Tajuk', border: OutlineInputBorder()),
                     ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: _descController,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                          labelText: 'Keterangan',
-                          border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Keterangan', border: OutlineInputBorder()),
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                          labelText: 'Kategori', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
                       value: _selectedCategory,
-                      onChanged: (value) =>
-                          setState(() => _selectedCategory = value),
-                      items: _categories
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
+                      onChanged: (value) => setState(() => _selectedCategory = value),
+                      items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                     ),
                     const SizedBox(height: 20),
-
-                    // 🖼️ Friendly Web/Mobile Image Section
                     Center(
                       child: Column(
                         children: [
@@ -328,29 +320,14 @@ class _PostingPageState extends State<PostingPage> {
                               child: _image != null
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
-                                      child: Image.file(
-                                        _image!,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                      ),
+                                      child: Image.file(_image!, fit: BoxFit.cover, width: double.infinity),
                                     )
                                   : _webImage != null
                                       ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          child: Image.memory(
-                                            _webImage!,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                          ),
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: Image.memory(_webImage!, fit: BoxFit.cover, width: double.infinity),
                                         )
-                                      : const Center(
-                                          child: Text(
-                                            'Klik di sini untuk pilih gambar',
-                                            style: TextStyle(
-                                                color: Colors.black54),
-                                          ),
-                                        ),
+                                      : const Center(child: Text('Klik di sini untuk pilih gambar', style: TextStyle(color: Colors.black54))),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -362,7 +339,6 @@ class _PostingPageState extends State<PostingPage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
                     _isUploading
                         ? const CircularProgressIndicator()
@@ -373,8 +349,7 @@ class _PostingPageState extends State<PostingPage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Color(0xFF87AC4F),
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 25),
+                              padding: const EdgeInsets.symmetric(horizontal: 25),
                             ),
                           ),
                     const SizedBox(height: 10),
@@ -383,26 +358,13 @@ class _PostingPageState extends State<PostingPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
           StreamBuilder<QuerySnapshot>(
-            stream: _firestore
-                .collection('posts')
-                .where('ajkId', isEqualTo: widget.ajkId)
-                .snapshots(),
+            stream: _firestore.collection('posts').where('ajkId', isEqualTo: widget.ajkId).snapshots(),
             builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Text(
-                  'Ralat: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.red),
-                );
-              }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text('Tiada posting buat masa ini.');
-              }
+              if (snapshot.hasError) return Text('Ralat: ${snapshot.error}', style: const TextStyle(color: Colors.red));
+              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Text('Tiada posting buat masa ini.');
 
               final posts = snapshot.data!.docs;
               return ListView.builder(
@@ -415,9 +377,7 @@ class _PostingPageState extends State<PostingPage> {
 
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: ListTile(
                       title: Text(data['title'] ?? ''),
                       subtitle: Column(
@@ -426,38 +386,20 @@ class _PostingPageState extends State<PostingPage> {
                           Text(data['description'] ?? ''),
                           const SizedBox(height: 5),
                           if (data['category'] != null)
-                            Text(
-                              "Kategori: ${data['category']}",
-                              style: const TextStyle(
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey,
-                              ),
-                            ),
+                            Text("Kategori: ${data['category']}", style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
                           const SizedBox(height: 8),
-                          if (data['imageUrl'] != null &&
-                              (data['imageUrl'] as String).isNotEmpty)
+                          if (data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                data['imageUrl'],
-                                height: 180,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                              child: Image.network(data['imageUrl'], height: 180, width: double.infinity, fit: BoxFit.cover),
                             ),
                         ],
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => _editPost(postId, data),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deletePost(postId),
-                          ),
+                          IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _editPost(postId, data)),
+                          IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deletePost(postId)),
                         ],
                       ),
                     ),

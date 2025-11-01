@@ -28,14 +28,17 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  
+  
 "hosting": [
   {
-    "target": "paid",
-    "public": "build/web_paid",
+    "target": "surau",
+    "public": "build/web_surau",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [{"source": "**", "destination": "/index.html"}]
   }
 ],
+
 
 
   "storage": {
