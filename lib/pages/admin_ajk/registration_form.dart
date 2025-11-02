@@ -38,83 +38,50 @@ class _AjkRegisterFormState extends State<RegisterForm> {
       try {
         final firestore = FirebaseFirestore.instance;
 
-        // ✅ Generate unique document ID based on surau name + timestamp
-        final surauDocId =
-            "${_surauName.text.trim()}_${DateTime.now().millisecondsSinceEpoch}";
-
-        // ✅ Step 1: Create main document in "form" collection
-        await firestore.collection("form").doc(surauDocId).set({
-          "surauName": _surauName.text.trim(),
-          "surauAddress": _surauAddress.text.trim(),
-          "status": "pending", // 🔥 Tambah ni supaya dashboard boleh detect
-          "createdAt": Timestamp.now(),
-          });
-
-
-        // ✅ Step 2: Create subcollection "ajk" → document "ajk_data"
-        await firestore
-            .collection("form")
-            .doc(surauDocId)
-            .collection("ajk")
-            .doc("ajk_data")
-            .set({
-          "ajkName": _ajkName.text.trim(),
-          "ic": _ic.text.trim(),
-          "email": _email.text.trim(),
-          "phone": _phone.text.trim(),
-          "password": _password.text.trim(),
+        // 🔹 1. Simpan maklumat surau baru
+        final surauRef = await firestore.collection("suraus").add({
+          "name": _surauName.text.trim(),
+          "address": _surauAddress.text.trim(),
           "status": "pending",
           "createdAt": Timestamp.now(),
         });
 
-        // ✅ Step 3: Create subcollection "donation" → document "donation_data"
-        await firestore
-            .collection("form")
-            .doc(surauDocId)
-            .collection("donation")
-            .doc("donation_data")
-            .set({
-          "title": "",
-          "amount": "",
-          "description": "",
-          "account": "",
-          "contact": "",
-          "qrUrl": "",
+        // 🔹 2. Cipta username automatik (contoh: ajk_alamin01)
+        String cleanSurauName = _surauName.text.trim().toLowerCase().replaceAll(" ", "");
+        String username = "ajk_${cleanSurauName}01";
+
+        // 🔹 3. Simpan akaun AJK ke dalam ajk_users (guna doc ID = username)
+        await firestore.collection("ajk_users").doc(username).set({
+          "username": username,
+          "password": _password.text.trim(),
+          "role": "ajk",
+          "status": "approved",
+          "surauId": surauRef.id,
+          "surauName": _surauName.text.trim(),
+          "ajkName": _ajkName.text.trim(),
+          "phone": _phone.text.trim(),
+          "email": _email.text.trim(),
           "createdAt": Timestamp.now(),
         });
 
-        // ✅ Step 4: Create subcollection "surauDetails" → document "surauDetails_data"
-        await firestore
-            .collection("form")
-            .doc(surauDocId)
-            .collection("surauDetails")
-            .doc("surauDetails_data")
-            .set({
-          "imam": "",
-          "activities": [],
-          "facilities": [],
+        // 🔹 4. (Optional) Simpan juga dalam collection form kalau nak simpan semua data permohonan
+        await firestore.collection("form").doc(surauRef.id).set({
+          "ajkName": _ajkName.text.trim(),
+          "ic": _ic.text.trim(),
+          "email": _email.text.trim(),
+          "phone": _phone.text.trim(),
+          "surauName": _surauName.text.trim(),
+          "surauAddress": _surauAddress.text.trim(),
+          "status": "pending",
           "createdAt": Timestamp.now(),
         });
 
-        // ✅ Step 5: Create subcollection "posting" → document "posting_data"
-        await firestore
-            .collection("form")
-            .doc(surauDocId)
-            .collection("posting")
-            .doc("posting_data")
-            .set({
-          "title": "",
-          "content": "",
-          "imageUrl": "",
-          "createdAt": Timestamp.now(),
-        });
-
-        // ✅ Success message
+        // 🔹 5. Papar mesej berjaya
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Maklumat berjaya dihantar!')),
+          SnackBar(content: Text('Surau & Akaun AJK "${_surauName.text}" berjaya mendaftar! Tunggu surau disahkan.')),
         );
 
-        // ✅ Clear all input fields
+        // Kosongkan form
         _ajkName.clear();
         _ic.clear();
         _email.clear();
@@ -123,10 +90,10 @@ class _AjkRegisterFormState extends State<RegisterForm> {
         _surauAddress.clear();
         _password.clear();
 
-        Navigator.pop(context); // back to previous page
+        Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ralat: ${e.toString()}')),
+          SnackBar(content: Text('Ralat: $e')),
         );
       }
     }
@@ -139,7 +106,7 @@ class _AjkRegisterFormState extends State<RegisterForm> {
         title: const Text('Pendaftaran AJK Surau'),
         foregroundColor: Colors.white,
         centerTitle: true,
-        backgroundColor: Color(0xFF87AC4F),
+        backgroundColor: const Color(0xFF87AC4F),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -204,10 +171,11 @@ class _AjkRegisterFormState extends State<RegisterForm> {
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.grey),
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.grey,
+                      ),
                       onPressed: () {
                         setState(() {
                           _obscurePassword = !_obscurePassword;
@@ -255,7 +223,7 @@ class _AjkRegisterFormState extends State<RegisterForm> {
                     icon: const Icon(Icons.save),
                     label: const Text('Hantar'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF87AC4F),
+                      backgroundColor: const Color(0xFF87AC4F),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 40, vertical: 12),
                       textStyle: const TextStyle(
