@@ -199,7 +199,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Color(0xFF808000);
+    final themeColor = Color(0xFF87AC4F);
 
     return Scaffold(
       body: _isLoading

@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
       // home: const HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
       // home: const AdminReportsPage(), // Example page
-      //Shome: const PaidDashboard(),
+     home: const PaidDashboard(),
 
 
   //hosting {
