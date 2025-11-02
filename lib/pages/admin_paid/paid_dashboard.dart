@@ -68,7 +68,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Papan Pemuka Pejabat Agama Islam Daerah",
+                    "Dashboard Pejabat Agama Islam Daerah",
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
