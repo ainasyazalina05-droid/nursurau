@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nursurau/services/follow_service.dart';
 import 'package:intl/intl.dart';
+import 'home_page.dart';
+import 'notifications_page.dart';
+import 'help_page.dart';
 
 class DonationsPage extends StatefulWidget {
   const DonationsPage({super.key});
@@ -12,6 +15,8 @@ class DonationsPage extends StatefulWidget {
 
 class _DonationsPageState extends State<DonationsPage> {
   late Future<List<Map<String, dynamic>>> _donationsFuture;
+  int _currentIndex = 2;
+  final Color themeColor = const Color(0xFF87AC4F);
 
   @override
   void initState() {
@@ -67,19 +72,63 @@ class _DonationsPageState extends State<DonationsPage> {
     }
   }
 
+  void _onNavTap(int index) {
+    if (index == _currentIndex) return;
+
+    Widget nextPage;
+    switch (index) {
+      case 0:
+        nextPage = const NotificationsPage();
+        break;
+      case 1:
+        nextPage = const HomePage();
+        break;
+      case 2:
+        nextPage = const DonationsPage();
+        break;
+      case 3:
+        nextPage = const HelpPage();
+        break;
+      default:
+        nextPage = const HomePage();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => nextPage,
+        transitionDuration: const Duration(milliseconds: 250),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const themeColor = Color(0xFF87AC4F);
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
+
+      // ✅ Uniform AppBar style
       appBar: AppBar(
-        title: const Text('Sumbangan',
-            style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: themeColor,
-        centerTitle: true,
-        elevation: 2,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        titleTextStyle: const TextStyle(),
+        title: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Sumbangan',
+            style: TextStyle(
+              fontWeight: FontWeight.w500, // ✅ Medium weight (not bold)
+              fontSize: 20,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
+
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _donationsFuture,
         builder: (context, snapshot) {
@@ -171,8 +220,7 @@ class _DonationsPageState extends State<DonationsPage> {
                                         color: Colors.grey[200],
                                         height: 200,
                                         child: const Center(
-                                            child:
-                                                CircularProgressIndicator()),
+                                            child: CircularProgressIndicator()),
                                       );
                                     },
                                   ),
@@ -183,10 +231,8 @@ class _DonationsPageState extends State<DonationsPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
-                                        color:
-                                            Colors.black.withOpacity(0.5),
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         surauName,
@@ -264,6 +310,33 @@ class _DonationsPageState extends State<DonationsPage> {
             ),
           );
         },
+      ),
+
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        currentIndex: _currentIndex,
+        selectedItemColor: themeColor,
+        unselectedItemColor: Colors.grey.shade700,
+        type: BottomNavigationBarType.fixed,
+        onTap: _onNavTap,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined),
+            label: "Notifikasi",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_filled),
+            label: "Utama",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.volunteer_activism),
+            label: "Donasi",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: "Bantuan",
+          ),
+        ],
       ),
     );
   }

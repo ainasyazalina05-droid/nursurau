@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
   bool _isSearching = false;
   bool _hasNewNotifications = false;
 
-  final Color _primaryColor = const Color(0xFF808000);
+  final Color _primaryColor = const Color(0xFF87AC4F);
   final Color _darkTextColor = const Color(0xFF3B3B3B);
 
   @override
@@ -44,7 +44,7 @@ class _HomePageState extends State<HomePage> {
       FirebaseMessaging messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(alert: true, badge: true, sound: true);
       String? token = await messaging.getToken();
-      print("FCM Token: $token");
+      debugPrint("FCM Token: $token");
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
         final surauId = message.data['ajkId'];
@@ -69,11 +69,14 @@ class _HomePageState extends State<HomePage> {
         final surauId = message.data['ajkId'];
         final followedIds = _followed.map((s) => s['ajkId']).toList();
         if (followedIds.contains(surauId)) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsPage()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationsPage()),
+          );
         }
       });
     } catch (e) {
-      print("Error initializing notifications: $e");
+      debugPrint("Error initializing notifications: $e");
     }
   }
 
@@ -115,14 +118,42 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// ✅ Flicker-free navigation with fade transition
   void _handleNavTap(int index) {
+    if (index == _currentIndex) return;
+
     setState(() => _currentIndex = index);
-    if (index == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsPage()));
-    if (index == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage()));
-    if (index == 3) Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage()));
+
+    Widget nextPage;
+    switch (index) {
+      case 0:
+        nextPage = const NotificationsPage();
+        break;
+      case 1:
+        nextPage = const HomePage();
+        break;
+      case 2:
+        nextPage = const DonationsPage();
+        break;
+      case 3:
+        nextPage = const HelpPage();
+        break;
+      default:
+        nextPage = const HomePage();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => nextPage,
+        transitionDuration: const Duration(milliseconds: 250),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
   }
 
-  void _openSurauDetails(Map<String, dynamic> surau) async {
+  Future<void> _openSurauDetails(Map<String, dynamic> surau) async {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => SurauDetailsPage(ajkId: surau['ajkId'])),
@@ -145,134 +176,25 @@ class _HomePageState extends State<HomePage> {
           children: [
             CustomScrollView(
               slivers: [
-                // 🌿 Redesigned Header + Search
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundImage: const AssetImage('assets/logo.png'),
-                                backgroundColor: _primaryColor.withOpacity(0.1),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'NurSurau',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: _darkTextColor,
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _handleNavTap(0),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Icon(Icons.notifications_outlined, size: 26, color: _darkTextColor),
-                                    if (_hasNewNotifications)
-                                      Positioned(
-                                        right: -2,
-                                        top: -2,
-                                        child: Container(
-                                          width: 9,
-                                          height: 9,
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 1.5),
-                                          ),
-                                        ),
-                                      )
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          _buildSearchBar(),
-                        ],
-                      ),
-                    ),
+                    child: _buildHeader(),
                   ),
                 ),
-
-                // 🕌 Followed + Available Surau Lists
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFollowedSection(),
-                        const SizedBox(height: 20),
-                        _buildDonationBanner(),
-                        const SizedBox(height: 20),
-                        const Text(
-                          "SURAU TERSEDIA:",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Color(0xFF4B4B4B),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ..._availableSuraus.map((s) => SurauCard(
-                              title: s['name'] ?? '',
-                              imagePath: s['image'] ?? '',
-                              onTap: () => _openSurauDetails(s),
-                            )),
-                      ],
-                    ),
+                    child: _buildMainContent(),
                   ),
                 ),
               ],
             ),
-
-            // 🔍 Search Results Overlay
             if (_isSearching && _filteredSuraus.isNotEmpty)
-              Positioned(
-                left: 16,
-                right: 16,
-                top: 130,
-                child: Material(
-                  color: Colors.white,
-                  elevation: 6,
-                  borderRadius: BorderRadius.circular(12),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _filteredSuraus.length,
-                    itemBuilder: (context, index) {
-                      final s = _filteredSuraus[index];
-                      return ListTile(
-                        leading: s['image'] != '' ? CircleAvatar(backgroundImage: NetworkImage(s['image'])) : null,
-                        title: Text(s['name'] ?? '', style: const TextStyle(color: Color(0xFF3B3B3B))),
-                        onTap: () => _openSurauDetails(s),
-                      );
-                    },
-                  ),
-                ),
-              ),
+              _buildSearchOverlay(),
           ],
         ),
       ),
-
-      // 🧭 Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         currentIndex: _currentIndex,
@@ -290,7 +212,132 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🌿 Search Bar
+  // 🌿 Header (with logo tap to HelpPage)
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => const HelpPage(),
+                    transitionDuration: const Duration(milliseconds: 250),
+                    transitionsBuilder: (_, animation, __, child) =>
+                        FadeTransition(opacity: animation, child: child),
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundImage: const AssetImage('assets/logo.png'),
+                  backgroundColor: _primaryColor.withOpacity(0.1),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'NurSurau',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: _darkTextColor,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _handleNavTap(0),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(Icons.notifications_outlined, size: 26, color: _darkTextColor),
+                    if (_hasNewNotifications)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildSearchBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFollowedSection(),
+        const SizedBox(height: 20),
+        _buildDonationBanner(),
+        const SizedBox(height: 20),
+        const Text(
+          "SURAU TERSEDIA:",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Color(0xFF4B4B4B),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ..._availableSuraus.map((s) => SurauCard(
+              title: s['name'] ?? '',
+              imagePath: s['image'] ?? '',
+              onTap: () => _openSurauDetails(s),
+            )),
+      ],
+    );
+  }
+
+  Widget _buildSearchOverlay() {
+    return Positioned(
+      left: 16,
+      right: 16,
+      top: 130,
+      child: Material(
+        color: Colors.white,
+        elevation: 6,
+        borderRadius: BorderRadius.circular(12),
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: _filteredSuraus.length,
+          itemBuilder: (context, index) {
+            final s = _filteredSuraus[index];
+            return ListTile(
+              leading: s['image'] != '' ? CircleAvatar(backgroundImage: NetworkImage(s['image'])) : null,
+              title: Text(s['name'] ?? '', style: const TextStyle(color: Color(0xFF3B3B3B))),
+              onTap: () => _openSurauDetails(s),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchBar() {
     return Focus(
       onFocusChange: (_) => setState(() {}),
@@ -335,20 +382,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 💚 Followed Section
   Widget _buildFollowedSection() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _primaryColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("SURAU DIIKUTI:",
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            "SURAU DIIKUTI:",
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           if (_followed.isEmpty)
             const Text("Tiada surau diikuti", style: TextStyle(color: Colors.white70))
@@ -361,8 +411,10 @@ class _HomePageState extends State<HomePage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: s['image'] != ''
-                            ? Image.network(s['image'], height: 180, width: double.infinity, fit: BoxFit.cover)
-                            : Image.asset('assets/surau1.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
+                            ? Image.network(s['image'],
+                                height: 180, width: double.infinity, fit: BoxFit.cover)
+                            : Image.asset('assets/surau1.jpg',
+                                height: 180, width: double.infinity, fit: BoxFit.cover),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -378,20 +430,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🤲 Donation Banner
   Widget _buildDonationBanner() {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationsPage())),
+      onTap: () => Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const DonationsPage(),
+          transitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+        ),
+      ),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F7),
+          color: _primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2))],
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2)),
+          ],
         ),
         child: Row(
           children: [
-            const Icon(Icons.volunteer_activism, size: 40, color: Color(0xFF808000)),
+            Icon(Icons.volunteer_activism, size: 40, color: _primaryColor),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -406,13 +467,17 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// 🕌 Surau Card
 class SurauCard extends StatelessWidget {
   final String title;
   final String imagePath;
   final VoidCallback onTap;
 
-  const SurauCard({super.key, required this.title, required this.imagePath, required this.onTap});
+  const SurauCard({
+    super.key,
+    required this.title,
+    required this.imagePath,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -422,20 +487,26 @@ class SurauCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4B4B4B))),
+          Text(title,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4B4B4B))),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: onTap,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: imagePath != '' && (imagePath.startsWith('http') || imagePath.startsWith('https'))
-                  ? Image.network(imagePath, height: 180, width: double.infinity, fit: BoxFit.cover)
-                  : Image.asset('assets/surau1.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
+              child: imagePath.isNotEmpty &&
+                      (imagePath.startsWith('http') || imagePath.startsWith('https'))
+                  ? Image.network(imagePath,
+                      height: 180, width: double.infinity, fit: BoxFit.cover)
+                  : Image.asset('assets/surau1.jpg',
+                      height: 180, width: double.infinity, fit: BoxFit.cover),
             ),
           ),
         ],

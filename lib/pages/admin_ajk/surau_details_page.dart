@@ -31,36 +31,55 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
   // 🔹 Fetch surau details
   Future<void> _fetchSurauDetails() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-    .collection('suraus')
-    .where('ajkId', isEqualTo: widget.ajkId)
-    .limit(1)
-    .get();
+  try {
+    // 🔹 Semak jika surau dengan ajkId ini sudah ada
+    final snapshot = await FirebaseFirestore.instance
+        .collection('suraus')
+        .where('ajkId', isEqualTo: widget.ajkId)
+        .limit(1)
+        .get();
 
-      if (snapshot.docs.isNotEmpty) {
-        final doc = snapshot.docs.first;
-        _docId = doc.id;
-        final data = doc.data();
+    if (snapshot.docs.isNotEmpty) {
+      // 🔹 Jika dah wujud, ambil data sedia ada
+      final doc = snapshot.docs.first;
+      _docId = doc.id;
+      final data = doc.data();
 
-        _nameController.text = data['name'] ?? '';
-        _addressController.text = data['address'] ?? '';
-        _nazirNameController.text = data['nazirName'] ?? '';
-        _nazirPhoneController.text = data['nazirPhone'] ?? '';
-        _imageUrl = data['imageUrl'];
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Maklumat surau tidak dijumpai.")),
-        );
-      }
-    } catch (e) {
+      _nameController.text = data['name'] ?? '';
+      _addressController.text = data['address'] ?? '';
+      _nazirNameController.text = data['nazirName'] ?? '';
+      _nazirPhoneController.text = data['nazirPhone'] ?? '';
+      _imageUrl = data['imageUrl'];
+    } else {
+      // 🔹 Jika TIADA surau untuk AJK ini → create baru automatik
+      final newDoc = await FirebaseFirestore.instance.collection('suraus').add({
+        'ajkId': widget.ajkId,
+        'name': '',
+        'address': '',
+        'nazirName': '',
+        'nazirPhone': '',
+        'imageUrl': '',
+        'approved': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      _docId = newDoc.id;
+      debugPrint('✅ Surau baru dibuat untuk ${widget.ajkId}');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ralat memuat data: $e")),
+        const SnackBar(
+          content: Text("Surau baru telah didaftarkan untuk akaun ini."),
+        ),
       );
-    } finally {
-      setState(() => _isLoading = false);
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Ralat memuat data: $e")),
+    );
+  } finally {
+    setState(() => _isLoading = false);
   }
+}
+
 
   // 🔹 Pick image (web + mobile)
   Future<void> _pickImage() async {

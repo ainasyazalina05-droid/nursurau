@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'manage_surau_page.dart';
+import 'approved_suraus_page.dart';
 
 class AdminPaidPage extends StatefulWidget {
   final String filter;
@@ -23,7 +24,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
   Future<void> _fetchSuraus() async {
     try {
       final firestore = FirebaseFirestore.instance;
-      Query query = firestore.collection('form');
+      Query query = firestore.collection('form'); // tukar nama koleksi kalau perlu
 
       if (widget.filter == 'Approved') {
         query = query.where('status', isEqualTo: 'approved');
@@ -38,7 +39,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
         isLoading = false;
       });
     } catch (e) {
-      debugPrint("Error fetching surau list: $e");
+      debugPrint("Gagal memuatkan senarai surau : $e");
       setState(() => isLoading = false);
     }
   }
@@ -62,29 +63,50 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
         backgroundColor: Colors.green[700],
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // putih confirm
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "${widget.filter} Suraus",
-          style: const TextStyle(
-            color: Colors.white, // title putih
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+  widget.filter == 'Approved'
+      ? "Senarai Surau Diluluskan"
+      : widget.filter == 'Pending'
+          ? "Senarai Surau Menunggu"
+          : "Keseluruhan Surau",
+  style: const TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.bold,
+  ),
+),
+
         centerTitle: true,
+        // 👇 hanya tunjuk ikon mata kalau filter == Approved
+        actions: widget.filter == 'Approved'
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.visibility, color: Colors.white),
+                  tooltip: "Senarai Surau Diluluskan",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ApprovedSurausPage(),
+                      ),
+                    );
+                  },
+                ),
+              ]
+            : null,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : surauList.isEmpty
-              ? const Center(
-                  child: Text("Tiada data surau dijumpai."),
-                )
+              ? const Center(child: Text("Tiada data surau dijumpai."))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: surauList.length,
                   itemBuilder: (context, index) {
-                    final surau = surauList[index].data() as Map<String, dynamic>;
+                    final surau =
+                        surauList[index].data() as Map<String, dynamic>;
                     final docId = surauList[index].id;
 
                     return Card(
@@ -141,7 +163,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                                   },
                                   icon: const Icon(Icons.settings),
                                   label: const Text(
-                                    "Manage",
+                                    "Urus Surau",
                                     style: TextStyle(fontSize: 16),
                                   ),
                                 ),

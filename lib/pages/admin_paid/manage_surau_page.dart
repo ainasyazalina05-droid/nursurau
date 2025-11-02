@@ -68,7 +68,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('form').doc(widget.docId).update({'status': newStatus});
+        await FirebaseFirestore.instance
+            .collection('form')
+            .doc(widget.docId)
+            .update({'status': newStatus});
 
         if (mounted) {
           setState(() {
@@ -76,7 +79,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Status telah dikemas kini kepada $newStatus'),
+              content: Text('Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
               backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
             ),
           );
@@ -97,6 +100,20 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
         return Colors.red;
       default:
         return Colors.orange;
+    }
+  }
+
+  // ✅ Fungsi ni letak SINI (bukan dalam build)
+  String _translateStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return 'DILULUSKAN';
+      case 'pending':
+        return 'MENUNGGU';
+      case 'rejected':
+        return 'DITOLAK';
+      default:
+        return '-';
     }
   }
 
@@ -146,7 +163,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
-            "Manage Surau",
+            "Pengurusan Surau",
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
@@ -172,14 +189,14 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
         backgroundColor: Colors.green[700],
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // anak panah putih
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Manage Surau",
+          "Pengurusan Surau",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        centerTitle: true, // tajuk tengah
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -197,7 +214,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                 children: [
                   const Text("Status: ", style: TextStyle(fontSize: 16)),
                   Text(
-                    surauData?['status']?.toUpperCase() ?? '-',
+                    _translateStatus(surauData?['status']),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -225,7 +242,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("approved"),
                       icon: const Icon(Icons.check_circle_outline, size: 28),
-                      label: const Text("Approve", style: TextStyle(fontSize: 18)),
+                      label: const Text("Luluskan", style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green[600],
                         foregroundColor: Colors.white,
@@ -236,7 +253,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("rejected"),
                       icon: const Icon(Icons.cancel_outlined, size: 28),
-                      label: const Text("Reject", style: TextStyle(fontSize: 18)),
+                      label: const Text("Ditolak", style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red[600],
                         foregroundColor: Colors.white,

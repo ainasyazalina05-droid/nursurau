@@ -10,18 +10,30 @@ class HelpPage extends StatefulWidget {
   State<HelpPage> createState() => _HelpPageState();
 }
 
-class _HelpPageState extends State<HelpPage>
-    with SingleTickerProviderStateMixin {
+class _HelpPageState extends State<HelpPage> {
+  final Color _primaryColor = const Color(0xFF87AC4F);
+  int _currentIndex = 3;
+
   final List<Item> _items = [
     Item(
       header: '📱 Tutorial Penggunaan',
       body:
-          '1. Mulakan Aplikasi\n- Buka NurSurauApp di telefon anda.\n- Pada skrin utama, anda akan nampak penunjuk kiblat dan jadual waktu solat harian. Selain itu, anda boleh melihat surau-surau yang telah mendaftar.\n\n'
-          '2. Melihat Pengumuman & Program\n- Tekan surau yang anda pilih untuk membaca maklumat terkini dan aktiviti komuniti.\n\n'
-          '3. Membuat Sumbangan\n- Pergi ke menu Sumbangan/Derma.\n- Anda boleh lihat nombor akaun bank atau imbas QR Code untuk membuat bayaran secara online.\n\n'
-          '4. Profil & Maklumat Surau\n- Tekan menu Profil Surau untuk lihat nama surau, lokasi, serta nombor telefon Nazir/ahli jawatankuasa.\n\n'
-          '5. Notifikasi & Peringatan\n- Aktifkan Notifikasi supaya anda tidak terlepas sebarang pengumuman atau aktiviti baru.\n\n'
-          '6. Hubungi Surau\n- Jika ada soalan, pergi ke menu Hubungi Kami untuk mendapatkan nombor telefon atau WhatsApp pihak surau.',
+          '1. Halaman Utama\n'
+          '- Tidak perlu log masuk untuk menggunakan aplikasi.\n'
+          '- Di halaman utama, terdapat bar carian untuk mencari surau yang berdaftar.\n'
+          '- Bahagian atas memaparkan surau yang telah diikuti, manakala bahagian bawah menunjukkan surau lain yang tersedia.\n'
+          '- Di bahagian bawah skrin, terdapat bar navigasi untuk akses pantas ke Notifikasi, Utama, Donasi dan Bantuan.\n\n'
+          '2. Melihat Maklumat Surau\n'
+          '- Tekan mana-mana surau untuk melihat maklumat lanjut.\n'
+          '- Paparan ini menunjukkan status “Ikuti”, gambar, nama, alamat dan nombor telefon Nazir.\n'
+          '- Di bawahnya terdapat senarai hantaran (posting) yang dimuat naik oleh pentadbir surau, termasuk nama program, penerangan, gambar/poster dan tarikh.\n\n'
+          '3. Notifikasi\n'
+          '- Halaman Notifikasi memaparkan pengumuman dan mesej daripada surau yang anda ikuti melalui notifikasi tolak (push notification).\n\n'
+          '4. Sumbangan / Derma\n'
+          '- Paparan Donasi menunjukkan kempen derma yang sedang dijalankan oleh surau.\n'
+          '- Tekan mana-mana kempen untuk melihat butiran penuh seperti nama, penerangan, nombor akaun dan kod QR untuk sumbangan segera.\n\n'
+          '5. Bantuan\n'
+          '- Untuk panduan lanjut atau maklumat tambahan, tekan menu Bantuan untuk membaca penerangan tentang cara penggunaan NurSurauApp.',
     ),
     Item(
       header: '🎯 Visi & Misi',
@@ -32,7 +44,11 @@ class _HelpPageState extends State<HelpPage>
     Item(
       header: '✨ Ciri-ciri Aplikasi',
       body:
-          '- Penunjuk kiblat & waktu solat harian.\n- Notifikasi pengumuman surau & program komuniti.\n- Paparan profil surau lengkap.\n- Fungsi derma melalui akaun bank atau QR Code.\n- Sokongan bahasa Melayu.\n- Reka bentuk mesra pengguna & moden.',
+          '- Carian surau berhampiran dengan maklumat lengkap (nama, alamat, gambar, dan nombor telefon).\n'
+          '- Fungsi “Ikuti Surau” untuk menerima notifikasi pengumuman dan program terkini.\n'
+          '- Paparan kempen derma aktif lengkap dengan kod QR atau nombor akaun bank.\n'
+          '- Antara muka mesra pengguna untuk pentadbir surau mengurus maklumat, aktiviti dan sumbangan.\n'
+          '- Reka bentuk moden, mudah digunakan dan menyokong komuniti Islam tempatan.',
     ),
     Item(
       header: '👨‍💻 Dibangunkan Oleh',
@@ -53,13 +69,46 @@ class _HelpPageState extends State<HelpPage>
     ),
   ];
 
+  void _handleNavTap(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+      );
+    } else if (index == 1) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DonationsPage()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFDFCF2),
       appBar: AppBar(
-        title: const Text("Maklumat & Bantuan"),
-        backgroundColor: const Color(0xFF808000),
+        backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
+        titleTextStyle: const TextStyle(), // Reset inherited bold style
+        title: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Maklumat & Bantuan',
+            style: TextStyle(
+              fontWeight: FontWeight.w500, // Softer than bold
+              fontSize: 20,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -70,29 +119,29 @@ class _HelpPageState extends State<HelpPage>
           children: _items.map<ExpansionPanelRadio>((Item item) {
             return ExpansionPanelRadio(
               value: item.header,
-              backgroundColor: const Color(0xFFF7F6E7),
+              backgroundColor: Colors.white,
               headerBuilder: (BuildContext context, bool isExpanded) {
-                return ListTile(
-                  leading: AnimatedRotation(
-                    duration: const Duration(milliseconds: 300),
-                    turns: isExpanded ? 0.5 : 0.0, // rotate arrow
-                    child: const Icon(Icons.keyboard_arrow_down,
-                        color: Color(0xFF808000)),
-                  ),
-                  title: Text(
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Text(
                     item.header,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4B5320),
+                      color: _primaryColor,
+                      fontSize: 16,
                     ),
                   ),
                 );
               },
               body: Container(
                 width: double.infinity,
-                color: const Color(0xFFFDFCF2),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Text(
                   item.body,
                   style: const TextStyle(fontSize: 15, height: 1.6),
@@ -102,32 +151,21 @@ class _HelpPageState extends State<HelpPage>
           }).toList(),
         ),
       ),
-
-      // 📌 Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFFF5E2B8),
-        currentIndex: 3,
-        selectedItemColor: const Color(0xFF808000),
-        unselectedItemColor: Colors.black87,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage()));
-          } else if (index == 1) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const HomePage()));
-          } else if (index == 2) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const DonationsPage()));
-          }
-        },
+        backgroundColor: Colors.white,
+        currentIndex: _currentIndex,
+        selectedItemColor: _primaryColor,
+        unselectedItemColor: Colors.grey.shade700,
+        type: BottomNavigationBarType.fixed,
+        onTap: _handleNavTap,
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.notifications), label: "Notifikasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Utama"),
+              icon: Icon(Icons.notifications_outlined), label: "Notifikasi"),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Utama"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.attach_money), label: "Donasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: "Info"),
+              icon: Icon(Icons.volunteer_activism), label: "Donasi"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.help_outline), label: "Bantuan"),
         ],
       ),
     );
@@ -135,11 +173,7 @@ class _HelpPageState extends State<HelpPage>
 }
 
 class Item {
-  Item({
-    required this.header,
-    required this.body,
-  });
-
+  Item({required this.header, required this.body});
   final String header;
   final String body;
 }

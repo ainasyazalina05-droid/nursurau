@@ -13,6 +13,9 @@ class SurauDetailsPage extends StatefulWidget {
 class _SurauDetailsPageState extends State<SurauDetailsPage> {
   bool _isFollowed = false;
 
+  final Color themeColor = const Color(0xFF87AC4F); // ✅ unified color
+  final Color bgColor = const Color(0xFFF4F5F2);
+
   @override
   void initState() {
     super.initState();
@@ -32,19 +35,19 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(followed
-              ? "Anda kini mengikuti surau ini"
-              : "Anda berhenti mengikuti surau ini"),
+          content: Text(
+            followed
+                ? "Anda kini mengikuti surau ini"
+                : "Anda berhenti mengikuti surau ini",
+          ),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
-          backgroundColor:
-              followed ? const Color(0xFF808000) : Colors.grey.shade700,
+          backgroundColor: followed ? themeColor : Colors.grey.shade700,
         ),
       );
     }
   }
 
-  /// Show full-size image in a zoomable dialog
   void _showFullImage(String imageUrl) {
     showDialog(
       context: context,
@@ -74,12 +77,12 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
         .snapshots();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F2),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('Maklumat Surau'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: const Color(0xFF808000),
+        backgroundColor: themeColor,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: surauRef,
@@ -96,7 +99,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // Banner Section
+                // 🌿 Banner
                 Stack(
                   children: [
                     GestureDetector(
@@ -117,7 +120,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                                   fit: BoxFit.cover,
                                 )
                               : null,
-                          color: const Color(0xFFBCCF82),
+                          color: themeColor.withOpacity(0.4),
                         ),
                         child: data['imageUrl'] == null ||
                                 (data['imageUrl'] as String).isEmpty
@@ -181,6 +184,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                         ],
                       ),
                     ),
+
+                    // ✅ Follow Button with unified color
                     Positioned(
                       top: 16,
                       right: 16,
@@ -193,16 +198,15 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                         label: Text(_isFollowed ? "Mengikuti" : "Ikut"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              _isFollowed ? const Color(0xFF808000) : Colors.white,
+                              _isFollowed ? themeColor : Colors.white,
                           foregroundColor:
-                              _isFollowed ? Colors.white : const Color(0xFF808000),
+                              _isFollowed ? Colors.white : themeColor,
                           elevation: 3,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
-                            side: BorderSide(
-                                color: const Color(0xFF808000), width: 1.2),
+                            side: BorderSide(color: themeColor, width: 1.2),
                           ),
                         ),
                       ),
@@ -212,7 +216,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
                 const SizedBox(height: 20),
 
-                // Nazir Info
+                // 💬 Nazir Info Card
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   padding: const EdgeInsets.all(16),
@@ -231,9 +235,8 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                     children: [
                       CircleAvatar(
                         radius: 26,
-                        backgroundColor: const Color(0xFF808000).withOpacity(0.1),
-                        child: const Icon(Icons.person,
-                            color: Color(0xFF808000), size: 30),
+                        backgroundColor: themeColor.withOpacity(0.15),
+                        child: Icon(Icons.person, color: themeColor, size: 30),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -266,7 +269,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
 
                 const SizedBox(height: 24),
 
-                // Posting Surau Section
+                // 🕌 Posting Section
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Align(
@@ -353,7 +356,7 @@ class _SurauDetailsPageState extends State<SurauDetailsPage> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF808000),
+                                          color: themeColor,
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
