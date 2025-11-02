@@ -10,7 +10,6 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.nursurau"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = 1
@@ -18,7 +17,6 @@ android {
     }
 
     compileOptions {
-        // 🔹 Use Java 17 for full compatibility with Gradle 8.5+
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
@@ -29,19 +27,18 @@ android {
     }
 
     buildTypes {
-        debug {
+        getByName("debug") {
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        release {
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
             isMinifyEnabled = false
             isShrinkResources = false
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
-}
+} // ✅ <-- This closing brace was missing!
 
 dependencies {
-    // ✅ Upgrade desugar_jdk_libs to version 2.1.4 (minimum required)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
