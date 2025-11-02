@@ -5,13 +5,10 @@
   "targets": {
     "nursurau2": {
       "hosting": {
-        "user": [
-          "user-nursurau2"
-        ],
-        "surau": [
+        "admin_ajk": [
           "surau-nursurau2"
         ],
-        "paid": [
+        "admin_paid": [
           "paid-nursurau2"
         ]
       }

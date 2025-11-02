@@ -73,7 +73,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
         title: const Text(
           "System Reports",
           style: TextStyle(
-            color: Color(0xFF2E7D32),
+            color: Color(0xFF87AC4F),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -97,13 +97,13 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
                     icon: Icons.mosque,
                     title: "Total Suraus",
                     count: totalSuraus,
-                    color: const Color(0xFF2E7D32),
+                    color: Color(0xFF87AC4F),
                   ),
                   _buildReportCard(
                     icon: Icons.check_circle,
                     title: "Approved",
                     count: approvedSuraus,
-                    color: Colors.green.shade600,
+                    color: Color(0xFF87AC4F),
                   ),
                   _buildReportCard(
                     icon: Icons.hourglass_bottom,

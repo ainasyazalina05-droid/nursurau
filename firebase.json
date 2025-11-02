@@ -28,18 +28,25 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  
-  
-"hosting": [
-  {
-    "target": "surau",
-    "public": "build/web_surau",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{"source": "**", "destination": "/index.html"}]
-  }
-],
 
-
+  "hosting": [
+    {
+      "target": "admin_ajk",
+      "public": "build/web_ajk",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "**", "destination": "/index.html" }
+      ]
+    },
+    {
+      "target": "admin_paid",
+      "public": "build/web_paid",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "**", "destination": "/index.html" }
+      ]
+    }
+  ],
 
   "storage": {
     "rules": "storage.rules"

@@ -47,7 +47,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return Colors.green;
+        return Color(0xFF87AC4F);
       case 'rejected':
         return Colors.red;
       default:
@@ -60,7 +60,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
-        backgroundColor: Colors.green[700],
+        backgroundColor: Color(0xFF87AC4F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -126,7 +126,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.green,
+                                color: Color(0xFF87AC4F),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -144,7 +144,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                                 ),
                                 ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green[700],
+                                    backgroundColor: Color(0xFF87AC4F),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 20, vertical: 12),

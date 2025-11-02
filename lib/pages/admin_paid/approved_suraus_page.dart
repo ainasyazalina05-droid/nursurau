@@ -9,7 +9,7 @@ class ApprovedSurausPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
-        backgroundColor: Colors.green[700],
+        backgroundColor: const Color(0xFF87AC4F),
         title: const Text(
           "Approved Suraus",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -56,7 +56,7 @@ class ApprovedSurausPage extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1B5E20),
+                          color: Color(0xFF87AC4F),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -95,7 +95,7 @@ class ApprovedSurausPage extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green[700],
+                            backgroundColor: Color(0xFF87AC4F),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 22, vertical: 12),
@@ -154,7 +154,7 @@ class SurauDetailsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
-        backgroundColor: Colors.green[700],
+        backgroundColor:const Color(0xFF87AC4F),
         title: Text(
           surauName,
           style: const TextStyle(color: Colors.white),
@@ -204,7 +204,7 @@ class SurauDetailsPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1B5E20),
+                          color:  Color(0xFF87AC4F),
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -225,7 +225,7 @@ class SurauDetailsPage extends StatelessWidget {
                                   TextSpan(
                                     text: nazirName,
                                     style: const TextStyle(
-                                      color: Color(0xFF1B5E20),
+                                      color: const Color(0xFF87AC4F),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 17,
                                     ),

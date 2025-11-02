@@ -32,57 +32,67 @@ class _PostingPageState extends State<PostingPage> {
   ];
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      if (kIsWeb) {
-        _webImage = await picked.readAsBytes();
-        _image = null;
-      } else {
-        _image = File(picked.path);
-        _webImage = null;
-      }
-      setState(() {});
+  final picker = ImagePicker();
+  final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
+  if (picked != null) {
+    if (kIsWeb) {
+      _webImage = await picked.readAsBytes();
+      _image = null;
+    } else {
+      _image = File(picked.path);
+      _webImage = null;
     }
+    setState(() {});
   }
+}
 
   Future<String?> _uploadToCloudinary() async {
-    const cloudName = 'dvrws03cg';
-    const uploadPreset = 'unsigned_preset';
-    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+  const cloudName = 'dvrws03cg';
+  const uploadPreset = 'unsigned_preset';
+  final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
-    final request = http.MultipartRequest('POST', url)..fields['upload_preset'] = uploadPreset;
+  final request = http.MultipartRequest('POST', url)
+    ..fields['upload_preset'] = uploadPreset;
 
-    try {
-      if (kIsWeb && _webImage != null) {
-        request.files.add(
-          http.MultipartFile.fromBytes('file', _webImage!, filename: 'posting.jpg'),
-        );
-      } else if (_image != null) {
-        request.files.add(await http.MultipartFile.fromPath('file', _image!.path));
-      } else {
-        debugPrint('❌ Tiada gambar untuk diupload');
-        return null;
-      }
-
-      debugPrint('🔄 Menghantar gambar ke Cloudinary...');
-      final response = await request.send();
-      final responseData = await response.stream.bytesToString();
-      debugPrint('Cloudinary response: $responseData');
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(responseData);
-        debugPrint('✅ Upload berjaya: ${jsonData['secure_url']}');
-        return jsonData['secure_url'];
-      } else {
-        debugPrint('❌ Upload gagal: ${response.reasonPhrase}');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('❌ Ralat semasa upload: $e');
+  try {
+    if (kIsWeb && _webImage != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes('file', _webImage!, filename: 'posting.jpg'),
+      );
+    } else if (_image != null) {
+      // ✅ compress image before upload
+      final compressedImage = await _image!.readAsBytes();
+      request.files.add(http.MultipartFile.fromBytes('file', compressedImage, filename: 'posting.jpg'));
+    } else {
+      debugPrint('❌ Tiada gambar untuk diupload');
       return null;
     }
+
+    debugPrint('🔄 Memuat naik gambar ke Cloudinary...');
+    final streamedResponse = await request.send().timeout(
+      const Duration(seconds: 25), // prevent infinite wait
+      onTimeout: () {
+        throw Exception("⏰ Upload mengambil masa terlalu lama — semak sambungan internet anda.");
+      },
+    );
+
+    final responseData = await streamedResponse.stream.bytesToString();
+    debugPrint('📥 Respons Cloudinary: $responseData');
+
+    if (streamedResponse.statusCode == 200) {
+      final jsonData = json.decode(responseData);
+      debugPrint('✅ Upload berjaya: ${jsonData['secure_url']}');
+      return jsonData['secure_url'];
+    } else {
+      debugPrint('❌ Upload gagal: ${streamedResponse.reasonPhrase}');
+      return null;
+    }
+  } catch (e) {
+    debugPrint('❌ Ralat semasa upload: $e');
+    return null;
   }
+}
+
 
   Future<void> _uploadPost() async {
     if (_titleController.text.isEmpty ||

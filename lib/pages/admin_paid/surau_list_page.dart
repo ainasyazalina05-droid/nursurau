@@ -38,7 +38,7 @@ class SurauListPage extends StatelessWidget {
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
-        return Colors.green;
+        return Color(0xFF87AC4F);
       case 'pending':
         return Colors.orange;
       case 'rejected':
@@ -58,7 +58,7 @@ class SurauListPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green,
+        backgroundColor: Color(0xFF87AC4F),
         title: Text(
           getTitle(),
           style: const TextStyle(
@@ -111,7 +111,7 @@ class SurauListPage extends StatelessWidget {
                     name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Color(0xFF87AC4F),
                       fontSize: 16,
                     ),
                   ),
@@ -155,7 +155,7 @@ class SurauListPage extends StatelessWidget {
                     icon: const Icon(Icons.settings, size: 18),
                     label: const Text("Urus Surau"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Color(0xFF87AC4F),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

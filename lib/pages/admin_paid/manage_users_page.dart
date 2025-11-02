@@ -9,7 +9,7 @@ class ManageUsersPage extends StatefulWidget {
 }
 
 class _ManageUsersPageState extends State<ManageUsersPage> {
-  final Color themeColor = const Color(0xFF2E7D32);
+  final Color themeColor = Color(0xFF87AC4F);
 
   Future<void> updateUserRoleAndStatus(String username, String newRole,
       {String? newStatus}) async {
@@ -28,7 +28,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         SnackBar(
           content: Text(
               "Peranan dikemas kini kepada $newRole${newStatus != null ? ' & status $newStatus' : ''}"),
-          backgroundColor: Colors.green,
+          backgroundColor: Color(0xFF87AC4F),
         ),
       );
     } catch (e) {
@@ -137,7 +137,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                     children: [
                       const CircleAvatar(
                         radius: 25,
-                        backgroundColor: Colors.green,
+                        backgroundColor: Color(0xFF87AC4F),
                         child: Icon(Icons.person, color: Colors.white, size: 28),
                       ),
                       const SizedBox(width: 12),
@@ -164,7 +164,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                         ),
                       ),
                       PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.green),
+                        icon: const Icon(Icons.more_vert, color:Color(0xFF87AC4F)),
                         onSelected: (value) async {
                           switch (value) {
                             case 'ajk':
@@ -195,7 +195,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                           const PopupMenuItem(
                             value: 'approve',
                             child: Text("Diluluskan",
-                                style: TextStyle(color: Colors.green)),
+                                style: TextStyle(color: Color(0xFF87AC4F))),
                           ),
                           const PopupMenuItem(
                             value: 'reject',

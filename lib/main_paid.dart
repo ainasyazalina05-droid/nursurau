@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:nursurau/firebase_options.dart';
-import 'package:nursurau/pages/admin_ajk/login_page.dart';
-// import 'package:nursurau/pages/admin_paid/paid.dart';
+import 'package:nursurau/pages/admin_paid/login_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,13 +16,12 @@ class PaidWebApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: "NurSurau - Admin Paid",
-      theme: ThemeData(primarySwatch: Colors.green),
-       home: LoginPage(), // Admin AJK login
-      // home: const HomePage(), // User
-      // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
-      // home: const AdminReportsPage(), // Example page
-      // home: const PaidDashboard(),
+      title: "NurSurau - PAID Portal",
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        scaffoldBackgroundColor: const Color(0xFFF2F7F3),
+      ),
+      home: const PaidLoginPage(), // ✅ This goes to PAID login page
     );
   }
 }

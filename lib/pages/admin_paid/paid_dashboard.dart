@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
+import 'package:nursurau/pages/admin_paid/login_page.dart';
 import 'package:nursurau/pages/admin_paid/manage_users_page.dart';
-
+import 'package:nursurau/pages/admin_paid/paid.dart';
 
 class PaidDashboard extends StatefulWidget {
-  const PaidDashboard({super.key});
+  final String paidId;
+  const PaidDashboard({super.key, required this.paidId});
 
   @override
   State<PaidDashboard> createState() => _PaidDashboardState();
@@ -27,66 +28,102 @@ class _PaidDashboardState extends State<PaidDashboard> {
   }
 
   Future<void> _fetchReportData() async {
-    try {
-      final firestore = FirebaseFirestore.instance;
+  try {
+    final firestore = FirebaseFirestore.instance;
 
-      final surauSnapshot = await firestore.collection('form').get();
-      final approvedSnapshot = await firestore
-          .collection('form')
+    // Try filtering by paidId first
+    QuerySnapshot<Map<String, dynamic>> surauSnapshot =
+        await firestore.collection('form').where('paidId', isEqualTo: widget.paidId).get();
+    QuerySnapshot<Map<String, dynamic>> approvedSnapshot =
+        await firestore.collection('form')
+            .where('status', isEqualTo: 'approved')
+            .where('paidId', isEqualTo: widget.paidId)
+            .get();
+    QuerySnapshot<Map<String, dynamic>> pendingSnapshot =
+        await firestore.collection('form')
+            .where('status', isEqualTo: 'pending')
+            .where('paidId', isEqualTo: widget.paidId)
+            .get();
+    QuerySnapshot<Map<String, dynamic>> userSnapshot =
+        await firestore.collection('ajk_users').where('paidId', isEqualTo: widget.paidId).get();
+    QuerySnapshot<Map<String, dynamic>> donationSnapshot =
+        await firestore.collection('donations').where('paidId', isEqualTo: widget.paidId).get();
+
+    // Fallback: if no data found with paidId, fetch all documents
+    if (surauSnapshot.size == 0) {
+      surauSnapshot = await firestore.collection('form').get();
+      approvedSnapshot = await firestore.collection('form')
           .where('status', isEqualTo: 'approved')
           .get();
-      final pendingSnapshot = await firestore
-          .collection('form')
+      pendingSnapshot = await firestore.collection('form')
           .where('status', isEqualTo: 'pending')
           .get();
-      final userSnapshot = await firestore.collection('ajk_users').get();
-      final donationSnapshot = await firestore.collection('donations').get();
-
-      setState(() {
-        totalSuraus = surauSnapshot.size;
-        approvedSuraus = approvedSnapshot.size;
-        pendingSuraus = pendingSnapshot.size;
-        totalUsers = userSnapshot.size;
-        totalDonations = donationSnapshot.size;
-        isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("Error loading reports: $e");
-      setState(() => isLoading = false);
+      userSnapshot = await firestore.collection('ajk_users').get();
+      donationSnapshot = await firestore.collection('donations').get();
     }
+
+    setState(() {
+      totalSuraus = surauSnapshot.size;
+      approvedSuraus = approvedSnapshot.size;
+      pendingSuraus = pendingSnapshot.size;
+      totalUsers = userSnapshot.size;
+      totalDonations = donationSnapshot.size;
+      isLoading = false;
+    });
+
+    // Debug prints to see results in Chrome console
+    debugPrint("surau: $totalSuraus, approved: $approvedSuraus, pending: $pendingSuraus");
+    debugPrint("users: $totalUsers, donations: $totalDonations");
+
+  } catch (e) {
+    debugPrint("Error loading reports: $e");
+    setState(() => isLoading = false);
+  }
+}
+
+
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const PaidLoginPage()),
+      (route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF87AC4F),
+        title: const Text(
+          "Dashboard PAID NurSurau",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 50, 16, 16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Dashboard Pejabat Agama Islam Daerah",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B5E20),
-                    ),
+                  Text(
+                    "Selamat Datang, Admin PAID!",
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF87AC4F)),
                   ),
-                  const SizedBox(height: 10),
-                  Container(
-                    height: 4,
-                    width: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1B5E20),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 20),
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -98,14 +135,14 @@ class _PaidDashboardState extends State<PaidDashboard> {
                         Icons.mosque,
                         "Keseluruhan Surau",
                         totalSuraus,
-                        const Color(0xFF2E7D32),
+                        Color(0xFF87AC4F),
                         onTap: () => _openAdminPage(context, "All"),
                       ),
                       _buildReportCard(
                         Icons.check_circle,
                         "Diluluskan",
                         approvedSuraus,
-                        Colors.green.shade700,
+                        Color(0xFF87AC4F),
                         onTap: () => _openAdminPage(context, "Approved"),
                       ),
                       _buildReportCard(
@@ -123,24 +160,23 @@ class _PaidDashboardState extends State<PaidDashboard> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const ManageUsersPage()),
-                            );
-                            },
+                            MaterialPageRoute(
+                              builder: (_) => const ManageUsersPage(),
                             ),
+                          );
+                        },
+                      ),
                     ],
                   ),
-
-                  const SizedBox(height: 40),
-
+                  const SizedBox(height: 30),
                   const Text(
                     "Taburan Status Surau",
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF87AC4F)),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Center(child: _buildPieChart()),
                 ],
               ),
@@ -149,22 +185,16 @@ class _PaidDashboardState extends State<PaidDashboard> {
   }
 
   Widget _buildReportCard(
-    IconData icon,
-    String title,
-    int count,
-    Color color, {
-    VoidCallback? onTap,
-  }) {
+      IconData icon, String title, int count, Color color,
+      {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF1B5E20).withOpacity(0.35),
-            width: 1.3,
-          ),
+          border:
+              Border.all(color: Color(0xFF87AC4F).withOpacity(0.35)),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF1B5E20).withOpacity(0.1),
@@ -179,24 +209,16 @@ class _PaidDashboardState extends State<PaidDashboard> {
           children: [
             Icon(icon, size: 46, color: color),
             const SizedBox(height: 10),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87)),
             const SizedBox(height: 6),
-            Text(
-              count.toString(),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
+            Text(count.toString(),
+                style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
       ),
@@ -218,7 +240,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
           centerSpaceRadius: 45,
           sections: [
             PieChartSectionData(
-              color: Colors.green.shade600,
+              color: Color(0xFF87AC4F),
               value: (approved / total) * 100,
               title: "Diluluskan\n$approvedSuraus",
               radius: 70,

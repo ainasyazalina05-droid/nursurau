@@ -95,7 +95,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return Colors.green;
+        return Color(0xFF87AC4F);
       case 'rejected':
         return Colors.red;
       default:
@@ -130,7 +130,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF87AC4F)),
             ),
             const Divider(),
             ...info.entries.map(
@@ -156,7 +156,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.green[700],
+          backgroundColor: Color(0xFF87AC4F),
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -186,7 +186,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green[700],
+        backgroundColor: Color(0xFF87AC4F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -244,7 +244,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                       icon: const Icon(Icons.check_circle_outline, size: 28),
                       label: const Text("Luluskan", style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[600],
+                        backgroundColor:  Color(0xFF87AC4F),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
