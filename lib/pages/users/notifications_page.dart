@@ -135,7 +135,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           backgroundColor: themeColor,
           foregroundColor: Colors.white,
           elevation: 0,
-          titleTextStyle: const TextStyle(), // Reset bold style
+          titleTextStyle: const TextStyle(),
           title: const Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -164,13 +164,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
         backgroundColor: themeColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        titleTextStyle: const TextStyle(), // Reset bold style
+        titleTextStyle: const TextStyle(),
         title: const Align(
           alignment: Alignment.centerLeft,
           child: Text(
             'Notifikasi',
             style: TextStyle(
-              fontWeight: FontWeight.w500, // not bold
+              fontWeight: FontWeight.w500,
               fontSize: 20,
               color: Colors.white,
             ),
@@ -252,8 +252,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           ),
                         ),
                         const SizedBox(height: 6),
+                        // ✅ Description now limited to 2 lines with ellipsis
                         Text(
                           desc,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade800,

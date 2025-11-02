@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
   Timer? _debounce;
+  StreamSubscription? _surauSubscription;
 
   int _currentIndex = 1;
   bool _isSearching = false;
@@ -34,9 +35,41 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadAvailableSuraus().then((_) => _loadFollowed());
+    _loadAvailableSuraus();
     _searchController.addListener(_onSearchChanged);
     Future.delayed(Duration.zero, _setupPushNotifications);
+  }
+
+  /// ✅ Real-time surau updates (exclude pending & unapproved)
+  Future<void> _loadAvailableSuraus() async {
+    await _surauSubscription?.cancel();
+
+    _surauSubscription = FirebaseFirestore.instance
+        .collection('suraus')
+        .snapshots()
+        .listen((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data();
+        final approved = data['approved'] == true;
+        final notPending = data['status'] != 'pending';
+
+        // ✅ Only include suraus that are approved & not pending
+        if (approved && notPending) {
+          return {
+            "ajkId": data['ajkId'] ?? '',
+            "name": data['name'] ?? '',
+            "address": data['address'] ?? '',
+            "image": data['imageUrl'] ?? ''
+          };
+        }
+        return null;
+      }).whereType<Map<String, dynamic>>().toList();
+
+      setState(() {
+        _availableSuraus = list;
+        _loadFollowed();
+      });
+    });
   }
 
   Future<void> _setupPushNotifications() async {
@@ -59,7 +92,10 @@ class _HomePageState extends State<HomePage> {
           if (mounted) {
             setState(() => _hasNewNotifications = true);
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message.notification?.title ?? 'Notifikasi baru')),
+              SnackBar(
+                content: Text(message.notification?.title ?? 'Notifikasi baru'),
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           }
         }
@@ -78,20 +114,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       debugPrint("Error initializing notifications: $e");
     }
-  }
-
-  Future<void> _loadAvailableSuraus() async {
-    final snapshot = await FirebaseFirestore.instance.collection('suraus').get();
-    final list = snapshot.docs.map((doc) {
-      final data = doc.data();
-      return {
-        "ajkId": data['ajkId'] ?? '',
-        "name": data['name'] ?? '',
-        "address": data['address'] ?? '',
-        "image": data['imageUrl'] ?? ''
-      };
-    }).toList();
-    setState(() => _availableSuraus = list);
   }
 
   Future<void> _loadFollowed() async {
@@ -118,8 +140,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  /// ✅ Flicker-free navigation with fade transition
-  void _handleNavTap(int index) {
+  void _handleNavTap(int index) async {
     if (index == _currentIndex) return;
 
     setState(() => _currentIndex = index);
@@ -127,6 +148,7 @@ class _HomePageState extends State<HomePage> {
     Widget nextPage;
     switch (index) {
       case 0:
+        setState(() => _hasNewNotifications = false); // ✅ reset badge
         nextPage = const NotificationsPage();
         break;
       case 1:
@@ -168,6 +190,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    _surauSubscription?.cancel();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -190,8 +221,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            if (_isSearching && _filteredSuraus.isNotEmpty)
-              _buildSearchOverlay(),
+            if (_isSearching && _filteredSuraus.isNotEmpty) _buildSearchOverlay(),
           ],
         ),
       ),
@@ -212,7 +242,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🌿 Header (with logo tap to HelpPage)
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -231,12 +260,7 @@ class _HomePageState extends State<HomePage> {
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  PageRouteBuilder(
-                    pageBuilder: (_, __, ___) => const HelpPage(),
-                    transitionDuration: const Duration(milliseconds: 250),
-                    transitionsBuilder: (_, animation, __, child) =>
-                        FadeTransition(opacity: animation, child: child),
-                  ),
+                  MaterialPageRoute(builder: (_) => const HelpPage()),
                 ),
                 child: CircleAvatar(
                   radius: 20,
@@ -434,12 +458,7 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const DonationsPage(),
-          transitionDuration: const Duration(milliseconds: 250),
-          transitionsBuilder: (_, animation, __, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
+        MaterialPageRoute(builder: (_) => const DonationsPage()),
       ),
       child: Container(
         padding: const EdgeInsets.all(16),
