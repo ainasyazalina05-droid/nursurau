@@ -28,7 +28,7 @@ class _HelpPageState extends State<HelpPage> {
           '- Paparan ini menunjukkan status “Ikuti”, gambar, nama, alamat dan nombor telefon Nazir.\n'
           '- Di bawahnya terdapat senarai hantaran (posting) yang dimuat naik oleh pentadbir surau, termasuk nama program, penerangan, gambar/poster dan tarikh.\n\n'
           '3. Notifikasi\n'
-          '- Halaman Notifikasi memaparkan pengumuman dan mesej daripada surau yang anda ikuti melalui notifikasi tolak (push notification).\n\n'
+          '- Halaman Notifikasi memaparkan pengumuman dan mesej daripada surau yang anda ikuti.\n\n'
           '4. Sumbangan / Derma\n'
           '- Paparan Donasi menunjukkan kempen derma yang sedang dijalankan oleh surau.\n'
           '- Tekan mana-mana kempen untuk melihat butiran penuh seperti nama, penerangan, nombor akaun dan kod QR untuk sumbangan segera.\n\n'
@@ -63,9 +63,7 @@ class _HelpPageState extends State<HelpPage> {
       header: '📞 Hubungi Kami',
       body:
           'Sekiranya anda menghadapi sebarang masalah atau mempunyai cadangan, sila hubungi kami di:\n\n'
-          'Email: support@nursurau.my\n'
-          'Telefon: +6012-3456789\n'
-          'Alamat: Politeknik Sultan Idris Shah, Sabak Bernam, Selangor.',
+          'Email: nursurau@gmail.com\n'
     ),
   ];
 

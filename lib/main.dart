@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nursurau/pages/admin_ajk/login_page.dart';
+<<<<<<< HEAD
 import 'package:nursurau/pages/admin_paid/login_page.dart';
 //import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
 //import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
@@ -9,17 +10,33 @@ import 'package:nursurau/pages/admin_paid/login_page.dart';
 // import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
 // import 'package:nursurau/pages/admin_paid/report_page.dart';
 //import 'package:nursurau/pages/users/home_page.dart';
+=======
+import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
+import 'package:nursurau/pages/users/home_page.dart';
+import 'package:nursurau/services/notification_service.dart'; // ✅ added
+>>>>>>> 0a9c52854fbb367674895743ac180c45de007da4
 import 'firebase_options.dart';
 
 // ✅ Handle background notifications
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("🔔 Background message: ${message.notification?.title}");
+
+  // ✅ show notification even when app is in background
+  if (message.notification != null) {
+    NotificationService.showNotification(
+      message.notification!.title ?? 'Nursurau',
+      message.notification!.body ?? 'Anda mempunyai pemberitahuan baru',
+    );
+  }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Initialize notification service (foreground popups)
+  await NotificationService.initialize();
 
   // ✅ Register background handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -38,37 +55,38 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.green),
 
       // ✅ Choose the home screen you want to test:
+      //home: LoginPage(), // Admin AJK login
       // home: LoginPage(), // Admin AJK login
-      // home: const HomePage(), // User
+      home: const HomePage(), // User
       // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
       // home: const AdminReportsPage(), // Example page
+<<<<<<< HEAD
     // home: const PaidDashboard(),
     home: const PaidLoginPage(),
+=======
+      // home: const PaidDashboard(),
+>>>>>>> 0a9c52854fbb367674895743ac180c45de007da4
 
+      //hosting {
+      //  "target": "surau",
+      //  "public": "build/web_surau",
+      //  "ignore": ["firebase.json", "/.", "/node_modules/*"],
+      //  "rewrites": [{"source": "", "destination": "/index.html"}]
+      // },
 
-  //hosting {
-  //  "target": "surau",
-  //  "public": "build/web_surau",
-  //  "ignore": ["firebase.json", "/.", "/node_modules/*"],
-  //  "rewrites": [{"source": "", "destination": "/index.html"}]
-  // },
+      //hosting {
+      //  "target": "surau",
+      //  "public": "build/web_surau",
+      //  "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      //  "rewrites": [{"source": "**", "destination": "/index.html"}]
+      // },
 
-
-  //hosting {
-  //  "target": "surau",
-  //  "public": "build/web_surau",
-  //  "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-  //  "rewrites": [{"source": "**", "destination": "/index.html"}]
-  // },
-
-  //{
-  //  "target": "paid",
-  //  "public": "build/web_paid",
-  //  "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-  //  "rewrites": [{"source": "**", "destination": "/index.html"}]
-  //}
-
-
+      //{
+      //  "target": "paid",
+      //  "public": "build/web_paid",
+      //  "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      //  "rewrites": [{"source": "**", "destination": "/index.html"}]
+      //}
     );
   }
 }
