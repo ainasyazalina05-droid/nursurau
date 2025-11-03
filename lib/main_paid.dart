@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:nursurau/firebase_options.dart';
-import 'package:nursurau/pages/admin_paid/login_page.dart';
+import 'package:nursurau/pages/unified_login.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,7 @@ class PaidWebApp extends StatelessWidget {
         primarySwatch: Colors.green,
         scaffoldBackgroundColor: const Color(0xFFF2F7F3),
       ),
-      home: const PaidLoginPage(), // ✅ This goes to PAID login page
+      home: const UnifiedLoginPage(), // ✅ This goes to PAID login page
     );
   }
 }

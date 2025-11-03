@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:nursurau/pages/admin_paid/login_page.dart';
 import 'package:nursurau/pages/admin_paid/manage_users_page.dart';
 import 'package:nursurau/pages/admin_paid/paid.dart';
+import 'package:nursurau/pages/unified_login.dart';
 
 class PaidDashboard extends StatefulWidget {
   final String paidId;
@@ -73,7 +73,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const PaidLoginPage()),
+      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
       (route) => false,
     );
   }

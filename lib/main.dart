@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nursurau/firebase_options.dart';
-import 'package:nursurau/pages/admin_ajk/login_page.dart';
-import 'package:nursurau/pages/admin_paid/login_page.dart';
 import 'package:nursurau/pages/unified_login.dart';
 import 'package:nursurau/pages/users/notification_service.dart';
 //import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
