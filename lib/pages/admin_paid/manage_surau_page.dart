@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ManageSurauPage extends StatefulWidget {
-  final String docId;
+  final String docId; // ✅ only one required parameter
+
   const ManageSurauPage({super.key, required this.docId});
 
   @override
@@ -23,7 +24,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
   Future<void> _fetchFormData() async {
     try {
-      final docRef = FirebaseFirestore.instance.collection('form').doc(widget.docId);
+      final docRef =
+          FirebaseFirestore.instance.collection('form').doc(widget.docId);
       final formSnap = await docRef.get();
       final ajkSnap = await docRef.collection('ajk').doc('ajk_data').get();
 
@@ -42,93 +44,65 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
- // 🔥 Fungsi untuk sahkan dan kemas kini status surau
-Future<void> _confirmAndUpdateStatus(String newStatus) async {
-  // Papar popup pengesahan sebelum update
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(newStatus == 'approved' ? 'Sahkan Kelulusan' : 'Sahkan Penolakan'),
-      content: Text(
-        'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
+  Future<void> _confirmAndUpdateStatus(String newStatus) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(newStatus == 'approved'
+            ? 'Sahkan Kelulusan'
+            : 'Sahkan Penolakan'),
+        content: Text(
+          'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  newStatus == 'approved' ? Colors.green : Colors.red,
+            ),
+            child: const Text('Ya', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Batal'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
-          ),
-          child: const Text('Ya', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    ),
-  );
+    );
 
-  if (confirm == true) {
-    try {
-      final formRef =
-          FirebaseFirestore.instance.collection('form').doc(widget.docId);
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('form')
+            .doc(widget.docId)
+            .update({'status': newStatus});
 
-      // 🟢 Update status dalam collection 'form'
-      await formRef.update({'status': newStatus});
-
-      // Ambil semula data form (untuk sync ke 'suraus')
-      final formSnap = await formRef.get();
-      final formData = formSnap.data();
-
-      // Rujukan dokumen dalam 'suraus'
-      final surauRef = FirebaseFirestore.instance
-          .collection('suraus')
-          .doc(widget.docId);
-
-      if (newStatus == 'approved') {
-  // ✅ Kalau status = approved → set approved = true
-  await surauRef.set({
-    'name': formData?['surauName'] ?? '-',
-    'address': formData?['surauAddress'] ?? '-',
-    'nazirName': formData?['ajkName'] ?? '-',
-    'nazirPhone': formData?['phone'] ?? '-',
-    'status': newStatus, // 💬 Simpan status semasa
-    'approved': true, // 🟢 Auto true bila status = approved
-  }, SetOptions(merge: true));
-} else {
-  // 🚫 Kalau bukan approved (contoh pending / rejected) → false
-  await surauRef.set({
-    'status': newStatus, // 💬 Simpan status semasa juga
-    'approved': false, // 🔴 Auto false bila status bukan approved
-  }, SetOptions(merge: true));
-}
-
-      // Papar mesej berjaya
-      if (mounted) {
-        setState(() {
-          surauData?['status'] = newStatus;
-        });
+        if (mounted) {
+          setState(() {
+            surauData?['status'] = newStatus;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
+              backgroundColor:
+                  newStatus == 'approved' ? Colors.green : Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
-            backgroundColor:
-                newStatus == 'approved' ? Colors.green : Colors.red,
-          ),
+          SnackBar(content: Text('Ralat: $e')),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ralat: $e')),
-      );
     }
   }
-}
-
 
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return Color(0xFF87AC4F);
+        return const Color(0xFF87AC4F);
       case 'rejected':
         return Colors.red;
       default:
@@ -136,7 +110,6 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
     }
   }
 
-  // ✅ Fungsi ni letak SINI (bukan dalam build)
   String _translateStatus(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -163,13 +136,18 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF87AC4F)),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF87AC4F),
+              ),
             ),
             const Divider(),
             ...info.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text("${e.key} : ${e.value}", style: const TextStyle(fontSize: 16)),
+                child: Text("${e.key} : ${e.value}",
+                    style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],
@@ -189,7 +167,7 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Color(0xFF87AC4F),
+          backgroundColor: const Color(0xFF87AC4F),
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -219,7 +197,7 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF87AC4F),
+        backgroundColor: const Color(0xFF87AC4F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -257,7 +235,6 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
                 ],
               ),
               const SizedBox(height: 20),
-
               if (ajkData != null)
                 _buildInfoCard("Maklumat AJK", {
                   "Nama AJK": ajkData?['ajkName'] ?? '-',
@@ -267,31 +244,37 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
                   "Kata Laluan": ajkData?['password'] ?? '-',
                 }),
               const SizedBox(height: 40),
-
               if ((surauData?['status'] ?? '') == "pending")
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("approved"),
-                      icon: const Icon(Icons.check_circle_outline, size: 28),
-                      label: const Text("Luluskan", style: TextStyle(fontSize: 18)),
+                      icon:
+                          const Icon(Icons.check_circle_outline, size: 28),
+                      label: const Text("Luluskan",
+                          style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:  Color(0xFF87AC4F),
+                        backgroundColor: const Color(0xFF87AC4F),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("rejected"),
                       icon: const Icon(Icons.cancel_outlined, size: 28),
-                      label: const Text("Ditolak", style: TextStyle(fontSize: 18)),
+                      label: const Text("Ditolak",
+                          style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red[600],
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ],
@@ -303,4 +286,3 @@ Future<void> _confirmAndUpdateStatus(String newStatus) async {
     );
   }
 }
-
