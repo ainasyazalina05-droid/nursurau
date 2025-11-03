@@ -20,7 +20,6 @@ class SurauListPage extends StatelessWidget {
     }
   }
 
-  // Tukar status ke BM
   String translateStatus(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -34,7 +33,6 @@ class SurauListPage extends StatelessWidget {
     }
   }
 
-  // Warna ikut status
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
