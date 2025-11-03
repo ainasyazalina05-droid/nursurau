@@ -184,46 +184,60 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
-  Widget _buildReportCard(
-      IconData icon, String title, int count, Color color,
-      {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: Color(0xFF87AC4F).withOpacity(0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1B5E20).withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
+ Widget _buildReportCard(
+  IconData icon,
+  String title,
+  int count,
+  Color color, {
+  VoidCallback? onTap,
+}) {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF87AC4F).withOpacity(0.35)),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF1B5E20).withOpacity(0.1),
+          blurRadius: 10,
+          offset: const Offset(0, 5),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 46, color: color),
-            const SizedBox(height: 10),
-            Text(title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87)),
-            const SizedBox(height: 6),
-            Text(count.toString(),
-                style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-          ],
+      ],
+    ),
+    padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 40),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // ✅ Only the icon is clickable + hover effect
+        _HoverIcon(
+          icon: icon,
+          color: color,
+          onTap: onTap, // Pass the onTap here
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 10),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          count.toString(),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildPieChart() {
     final approved = approvedSuraus.toDouble();
@@ -268,3 +282,48 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 }
+class _HoverIcon extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _HoverIcon({
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  State<_HoverIcon> createState() => _HoverIconState();
+}
+
+class _HoverIconState extends State<_HoverIcon> {
+  bool isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap, // ✅ Only the icon reacts to click
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          transform: Matrix4.identity()
+            ..scale(isHovered ? 1.15 : 1.0),
+          child: Icon(
+            widget.icon,
+            size: 70,
+            color: isHovered
+                ? widget.color.withOpacity(0.7)
+                : widget.color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+

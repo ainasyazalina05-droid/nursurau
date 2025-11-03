@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'manage_surau_page.dart';
-import 'approved_suraus_page.dart';
+import 'view_surau_page.dart'; // <-- You need to create this file for view details
 
 class AdminPaidPage extends StatefulWidget {
   final String filter;
@@ -24,7 +24,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
   Future<void> _fetchSuraus() async {
     try {
       final firestore = FirebaseFirestore.instance;
-      Query query = firestore.collection('form'); // tukar nama koleksi kalau perlu
+      Query query = firestore.collection('form');
 
       if (widget.filter == 'Approved') {
         query = query.where('status', isEqualTo: 'approved');
@@ -33,7 +33,6 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
       }
 
       final snapshot = await query.get();
-
       setState(() {
         surauList = snapshot.docs;
         isLoading = false;
@@ -47,7 +46,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return Color(0xFF87AC4F);
+        return const Color(0xFF87AC4F);
       case 'rejected':
         return Colors.red;
       default:
@@ -60,42 +59,24 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
-        backgroundColor: Color(0xFF87AC4F),
+        backgroundColor: const Color(0xFF87AC4F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-  widget.filter == 'Approved'
-      ? "Senarai Surau Diluluskan"
-      : widget.filter == 'Pending'
-          ? "Senarai Surau Menunggu"
-          : "Keseluruhan Surau",
-  style: const TextStyle(
-    color: Colors.white,
-    fontWeight: FontWeight.bold,
-  ),
-),
-
+          widget.filter == 'Approved'
+              ? "Senarai Surau Diluluskan"
+              : widget.filter == 'Pending'
+                  ? "Senarai Surau Menunggu"
+                  : "Keseluruhan Surau",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
-        // 👇 hanya tunjuk ikon mata kalau filter == Approved
-        actions: widget.filter == 'Approved'
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.visibility, color: Colors.white),
-                  tooltip: "Senarai Surau Diluluskan",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ApprovedSurausPage(),
-                      ),
-                    );
-                  },
-                ),
-              ]
-            : null,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -105,9 +86,9 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                   padding: const EdgeInsets.all(16),
                   itemCount: surauList.length,
                   itemBuilder: (context, index) {
-                    final surau =
-                        surauList[index].data() as Map<String, dynamic>;
-                    final docId = surauList[index].id;
+                    final doc = surauList[index];
+                    final surau = doc.data() as Map<String, dynamic>;
+                    final docId = doc.id;
 
                     return Card(
                       elevation: 3,
@@ -136,36 +117,71 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  surau['status']?.toUpperCase() ?? '-',
+                                  (surau['status'] ?? '-').toUpperCase(),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: _statusColor(surau['status']),
                                   ),
                                 ),
-                                ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Color(0xFF87AC4F),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            ManageSurauPage(docId: docId),
+
+                                // 🧠 Auto update button by StreamBuilder
+                                StreamBuilder<DocumentSnapshot>(
+                                  stream: FirebaseFirestore.instance
+                                      .collection('form')
+                                      .doc(docId)
+                                      .snapshots(),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return const SizedBox(
+                                        height: 40,
+                                        width: 40,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      );
+                                    }
+
+                                    final data = snapshot.data!.data() as Map<String, dynamic>?;
+                                    final status = data?['status'] ?? 'pending';
+                                    final isApproved = status == 'approved';
+
+                                    return ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            isApproved ? Colors.green : Colors.orange,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        if (isApproved) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ViewSurauPage(docId: docId),
+                                            ),
+                                          );
+                                        } else {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ManageSurauPage(docId: docId),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      icon: Icon(isApproved
+                                          ? Icons.visibility
+                                          : Icons.settings),
+                                      label: Text(
+                                        isApproved ? "Lihat Surau" : "Urus Surau",
+                                        style: const TextStyle(fontSize: 16),
                                       ),
                                     );
                                   },
-                                  icon: const Icon(Icons.settings),
-                                  label: const Text(
-                                    "Urus Surau",
-                                    style: TextStyle(fontSize: 16),
-                                  ),
                                 ),
                               ],
                             ),

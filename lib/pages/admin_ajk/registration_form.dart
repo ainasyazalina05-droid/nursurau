@@ -48,7 +48,7 @@ class _AjkRegisterFormState extends State<RegisterForm> {
 
         // 🔹 2. Cipta username automatik (contoh: ajk_alamin01)
         String cleanSurauName = _surauName.text.trim().toLowerCase().replaceAll(" ", "");
-        String username = "ajk_${cleanSurauName}01";
+        String username = "${cleanSurauName}";
 
         // 🔹 3. Simpan akaun AJK ke dalam ajk_users (guna doc ID = username)
         await firestore.collection("ajk_users").doc(username).set({

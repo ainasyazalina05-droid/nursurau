@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'manage_surau_page.dart';
+import 'view_surau_page.dart'; // ✅ Tambah ni
 
 class SurauListPage extends StatelessWidget {
   final String filter;
@@ -36,7 +37,7 @@ class SurauListPage extends StatelessWidget {
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
-        return Color(0xFF87AC4F);
+        return const Color(0xFF87AC4F);
       case 'pending':
         return Colors.orange;
       case 'rejected':
@@ -56,7 +57,7 @@ class SurauListPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF87AC4F),
+        backgroundColor: const Color(0xFF87AC4F),
         title: Text(
           getTitle(),
           style: const TextStyle(
@@ -142,24 +143,47 @@ class SurauListPage extends StatelessWidget {
                   ),
                   trailing: ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ManageSurauPage(docId: docSnapshot.id),
-                        ),
-                      );
+                      if (status.toLowerCase() == 'approved') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ViewSurauPage(docId: docSnapshot.id),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ManageSurauPage(docId: docSnapshot.id),
+                          ),
+                        );
+                      }
                     },
-                    icon: const Icon(Icons.settings, size: 18),
-                    label: const Text("Urus Surau"),
+                    icon: Icon(
+                      status.toLowerCase() == 'approved'
+                          ? Icons.visibility
+                          : Icons.settings,
+                      size: 18,
+                    ),
+                    label: Text(
+                      status.toLowerCase() == 'approved'
+                          ? "Lihat Surau"
+                          : "Urus Surau",
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF87AC4F),
+                      backgroundColor: status.toLowerCase() == 'approved'
+                          ? Colors.green
+                          : const Color(0xFF87AC4F),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                     ),
                   ),
                 ),
