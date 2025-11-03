@@ -270,6 +270,7 @@ class ReportCard extends StatelessWidget {
       ),
     );
   }
+  
 }
 
 // 🔹 Surau List Page

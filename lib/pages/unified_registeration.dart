@@ -112,6 +112,8 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Daftar Akaun NurSurau"),
+        foregroundColor: Colors.white,
+        centerTitle: true,
         backgroundColor: const Color(0xFF87AC4F),
       ),
       body: SingleChildScrollView(
