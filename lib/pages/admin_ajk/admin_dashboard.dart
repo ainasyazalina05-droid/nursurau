@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'package:nursurau/pages/unified_login.dart';
 import 'donation_page.dart';
 import 'posting_page.dart';
 import 'surau_details_page.dart';
@@ -69,7 +69,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _logout(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
       (route) => false,
     );
   }

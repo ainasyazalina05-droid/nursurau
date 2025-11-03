@@ -4,13 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nursurau/firebase_options.dart';
 import 'package:nursurau/pages/admin_ajk/login_page.dart';
 import 'package:nursurau/pages/admin_paid/login_page.dart';
-<<<<<<< HEAD
-//import 'package:nursurau/pages/admin_ajk/login_page.dart';
-import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
-//import 'package:nursurau/pages/admin_paid/login_page.dart';
-=======
 import 'package:nursurau/pages/unified_login.dart';
->>>>>>> c1715ac7902029ee2066b072b092ccbe7b7ed979
 import 'package:nursurau/pages/users/notification_service.dart';
 //import 'package:nursurau/pages/admin_paid/paid_dashboard.dart';
 //import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
@@ -54,13 +48,8 @@ class MyApp extends StatelessWidget {
       // home: const AdminPaidPage(), // Pejabat Agama Islam (PAID)
       // home: const AdminReportsPage(), // Example page
     // home: const PaidDashboard(),
-<<<<<<< HEAD
-    home: const PaidLoginPage(),
-
-=======
       //home: const PaidLoginPage(),
       home: const UnifiedLoginPage(),
->>>>>>> c1715ac7902029ee2066b072b092ccbe7b7ed979
 
 
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:nursurau/firebase_options.dart';
-import 'package:nursurau/pages/admin_ajk/login_page.dart';
+import 'package:nursurau/pages/unified_login.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +18,7 @@ class SurauWebApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: "NurSurau - Admin Surau",
       theme: ThemeData(primarySwatch: Colors.green),
-      home: const LoginPage(),
+      home: const UnifiedLoginPage(),
     );
   }
 }
