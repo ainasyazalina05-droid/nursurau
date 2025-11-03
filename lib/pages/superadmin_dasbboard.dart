@@ -31,7 +31,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // 🔹 Fetch all suraus
       final surauSnapshot = await firestore.collection('form').get();
       final approvedSnapshot = await firestore
           .collection('form')
@@ -42,10 +41,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      // 🔹 Count PAID admins (Pejabat Agama)
       final paidSnapshot = await firestore.collection('admin_pejabat_agama').get();
-
-      // 🔹 Count all users
       final userSnapshot = await firestore.collection('users').get();
 
       setState(() {
@@ -70,6 +66,15 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
   }
 
+  void _openSurauList(String statusFilter) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SurauListPage(statusFilter: statusFilter),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,7 +94,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -115,23 +122,22 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         title: "Keseluruhan Surau",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
-                        onTap: () => _openPage("All"),
+                        onTap: () => _openSurauList("All"),
                       ),
                       ReportCard(
                         icon: Icons.check_circle,
                         title: "Diluluskan",
                         count: approvedSuraus,
                         color: const Color(0xFF87AC4F),
-                        onTap: () => _openPage("Approved"),
+                        onTap: () => _openSurauList("Approved"),
                       ),
                       ReportCard(
                         icon: Icons.hourglass_bottom,
                         title: "Menunggu",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
-                        onTap: () => _openPage("Pending"),
+                        onTap: () => _openSurauList("Pending"),
                       ),
-                      // 🔹 Placeholder for PAID management (no page yet)
                       ReportCard(
                         icon: Icons.business,
                         title: "Pejabat Agama (PAID)",
@@ -154,7 +160,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const ManageUsersPage()),
+                            MaterialPageRoute(
+                                builder: (_) => const ManageUsersPage()),
                           );
                         },
                       ),
@@ -209,18 +216,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       ),
     );
   }
-
-  void _openPage(String filter) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ManageSurauPage(filter: filter),
-      ),
-    );
-  }
 }
 
-// 🔹 Reusable ReportCard widget
 class ReportCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -262,12 +259,76 @@ class ReportCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(count.toString(),
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+                style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// 🔹 Surau List Page
+class SurauListPage extends StatelessWidget {
+  final String statusFilter;
+
+  const SurauListPage({super.key, required this.statusFilter});
+
+  @override
+  Widget build(BuildContext context) {
+    final query = FirebaseFirestore.instance.collection('form');
+    final filteredQuery = statusFilter.toLowerCase() == "all"
+        ? query
+        : query.where('status', isEqualTo: statusFilter.toLowerCase());
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF87AC4F),
+        title: Text(
+          statusFilter == "All" ? "Semua Surau" : "Surau $statusFilter",
+        ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: filteredQuery.snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          final suraus = snapshot.data!.docs;
+          if (suraus.isEmpty) return const Center(child: Text("Tiada surau dijumpai."));
+
+          return ListView.builder(
+            itemCount: suraus.length,
+            itemBuilder: (context, index) {
+              final surau = suraus[index];
+              return ListTile(
+                title: Text(surau['surauName'] ?? '-'),
+                subtitle: Text(surau['surauAddress'] ?? '-'),
+                trailing: Text(
+                  (surau['status'] ?? '-').toUpperCase(),
+                  style: TextStyle(
+                    color: surau['status'] == 'approved'
+                        ? Colors.green
+                        : surau['status'] == 'pending'
+                            ? Colors.orange
+                            : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ManageSurauPage(docId: surau.id),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
