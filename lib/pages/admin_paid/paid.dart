@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'manage_surau_page.dart';
-import 'view_surau_page.dart'; // <-- You need to create this file for view details
+import 'view_surau_page.dart';
 
 class AdminPaidPage extends StatefulWidget {
   final String filter;
@@ -46,7 +46,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return const Color(0xFF87AC4F);
+        return Colors.green;
       case 'rejected':
         return Colors.red;
       default:
@@ -79,7 +79,8 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
         centerTitle: true,
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF87AC4F)))
           : surauList.isEmpty
               ? const Center(child: Text("Tiada data surau dijumpai."))
               : ListView.builder(
@@ -90,13 +91,17 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                     final surau = doc.data() as Map<String, dynamic>;
                     final docId = doc.id;
 
+                    final status =
+                        (surau['status'] ?? 'pending').toString().toLowerCase();
+                    final isApproved = status == 'approved';
+
                     return Card(
+                      color: Colors.white,
                       elevation: 3,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       margin: const EdgeInsets.symmetric(vertical: 8),
-                      color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -111,79 +116,69 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(surau['surauAddress'] ?? '-'),
+                            Text(
+                              surau['surauAddress'] ?? '-',
+                              style: const TextStyle(fontSize: 14),
+                            ),
                             const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  (surau['status'] ?? '-').toUpperCase(),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _statusColor(surau['status']),
+
+                            if (widget.filter == 'All')
+                              Text(
+                                status == 'approved'
+                                    ? "Diluluskan"
+                                    : status == 'pending'
+                                        ? "Menunggu"
+                                        : status,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _statusColor(status),
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isApproved
+                                      ? const Color(0xFF4E6C1E)
+                                      : Colors.orange.shade800,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-
-                                // 🧠 Auto update button by StreamBuilder
-                                StreamBuilder<DocumentSnapshot>(
-                                  stream: FirebaseFirestore.instance
-                                      .collection('form')
-                                      .doc(docId)
-                                      .snapshots(),
-                                  builder: (context, snapshot) {
-                                    if (!snapshot.hasData) {
-                                      return const SizedBox(
-                                        height: 40,
-                                        width: 40,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      );
-                                    }
-
-                                    final data = snapshot.data!.data() as Map<String, dynamic>?;
-                                    final status = data?['status'] ?? 'pending';
-                                    final isApproved = status == 'approved';
-
-                                    return ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            isApproved ? Colors.green : Colors.orange,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 20, vertical: 12),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        if (isApproved) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ViewSurauPage(docId: docId),
-                                            ),
-                                          );
-                                        } else {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ManageSurauPage(docId: docId),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      icon: Icon(isApproved
-                                          ? Icons.visibility
-                                          : Icons.settings),
-                                      label: Text(
-                                        isApproved ? "Lihat Surau" : "Urus Surau",
-                                        style: const TextStyle(fontSize: 16),
+                                icon: Icon(isApproved
+                                    ? Icons.visibility
+                                    : Icons.settings),
+                                label: Text(
+                                  isApproved
+                                      ? "Lihat Surau"
+                                      : "Urus Surau",
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                onPressed: () {
+                                  if (isApproved) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ViewSurauPage(docId: docId),
                                       ),
                                     );
-                                  },
-                                ),
-                              ],
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ManageSurauPage(docId: docId),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ],
                         ),
