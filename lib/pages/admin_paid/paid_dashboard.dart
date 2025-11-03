@@ -82,20 +82,33 @@ class _PaidDashboardState extends State<PaidDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF87AC4F),
-        title: const Text(
-          "Dashboard PAID NurSurau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+     appBar: AppBar(
+  centerTitle: true,
+  title: Text(
+    _pageTitle,
+    style: const TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  backgroundColor: const Color(0xFF87AC4F),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white, // Text & icon color
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
-          ),
-        ],
+        onPressed: () => _showLogoutDialog(context),
+        icon: const Icon(Icons.logout, color: Colors.white),
+        label: const Text(
+          "Log Keluar",
+          style: TextStyle(color: Colors.white),
+        ),
       ),
+    ),
+  ],
+),
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
           : SingleChildScrollView(
