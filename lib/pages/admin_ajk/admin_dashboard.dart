@@ -25,6 +25,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       PostingPage(ajkId: widget.ajkId),
       SurauDetailsPage(ajkId: widget.ajkId),
     ];
+    _currentIndex = 2;
   }
 
   // ✅ Function to show logout confirmation dialog
@@ -92,24 +93,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true, // ✅ Centers the title
+        centerTitle: true,
         title: Text(
           _pageTitle,
           style: const TextStyle(
-            color: Colors.white, // ✅ Makes title white
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor:  Color(0xFF87AC4F),
+        backgroundColor: const Color(0xFF87AC4F),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: "Log Keluar",
-            onPressed: () => _showLogoutDialog(context),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white, // Text & icon color
+              ),
+              onPressed: () => _showLogoutDialog(context),
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
           ),
         ],
       ),
-      body: _pages[_currentIndex],
+
+            body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

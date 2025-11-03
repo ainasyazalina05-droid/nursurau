@@ -58,3 +58,4 @@ flutter:
 
   assets:
     - assets/logo.png
+    - assets/background_image.png

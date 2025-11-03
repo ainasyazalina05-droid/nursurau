@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:nursurau/pages/unified_login.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -65,10 +66,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     }
   }
 
-  void _logout() {
-    Navigator.pop(context); // Atau navigate ke login page
-  }
-
   // 🔹 Approve/Reject Admin PAID
   Future<void> approveAdmin(String docId) async {
     await FirebaseFirestore.instance
@@ -90,10 +87,30 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("SuperAdmin Dashboard"),
+        centerTitle: true,
+        title: Text(
+          _pageTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: const Color(0xFF87AC4F),
         actions: [
-          IconButton(onPressed: _logout, icon: const Icon(Icons.logout))
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white, // Text & icon color
+              ),
+              onPressed: () => _showLogoutDialog(context),
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
         ],
       ),
       body: isLoading
@@ -105,7 +122,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 children: [
                   const Text(
                     "Selamat Datang, SuperAdmin!",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF87AC4F)),
                   ),
                   const SizedBox(height: 20),
                   GridView.count(
@@ -257,4 +274,26 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       ),
     );
   }
+  
+  void _showLogoutDialog(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
+      (route) => false,
+    );
+  }
 }
+
+String get _pageTitle {
+    var _currentIndex;
+    switch (_currentIndex) {
+      case 0:
+        return "Sumbangan";
+      case 1:
+        return "Hebahan";
+      case 2:
+        return "Maklumat Surau";
+      default:
+        return "Dashboard";
+    }
+  }
