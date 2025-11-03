@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 // Alias import untuk elak conflict
 import 'package:nursurau/pages/admin_ajk/admin_dashboard.dart' as ajk;
 import 'package:nursurau/pages/admin_paid/paid_dashboard.dart' as paid;
+import 'package:nursurau/pages/superadmin_dasbboard.dart';
 import 'package:nursurau/pages/unified_registeration.dart';
 
 
@@ -59,7 +60,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
         if (data['password'] == password) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const superadmin.SuperAdminDashboard()),
+            MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
           );
           return;
         } else {
