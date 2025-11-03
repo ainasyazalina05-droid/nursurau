@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:nursurau/pages/admin_paid/manage_users_page.dart';
-import 'package:nursurau/pages/admin_paid/paid.dart';
 import 'package:nursurau/pages/unified_login.dart';
+import 'package:nursurau/pages/superadmin/manage_suraus_page.dart';
+import 'package:nursurau/pages/superadmin/manage_paid_page.dart';
 
-class PaidDashboard extends StatefulWidget {
-  final String paidId;
-  const PaidDashboard({super.key, required this.paidId});
+class SuperAdminDashboard extends StatefulWidget {
+  const SuperAdminDashboard({super.key});
 
   @override
-  State<PaidDashboard> createState() => _PaidDashboardState();
+  State<SuperAdminDashboard> createState() => _SuperAdminDashboardState();
 }
 
-class _PaidDashboardState extends State<PaidDashboard> {
+class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int totalSuraus = 0;
   int approvedSuraus = 0;
   int pendingSuraus = 0;
+  int totalPaids = 0;
   int totalUsers = 0;
-  int totalDonations = 0;
   bool isLoading = true;
 
   @override
@@ -32,7 +32,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // 🔹 Semua surau (tak kira siapa submit)
+      // 🔹 Fetch all suraus
       final surauSnapshot = await firestore.collection('form').get();
       final approvedSnapshot = await firestore
           .collection('form')
@@ -43,27 +43,20 @@ class _PaidDashboardState extends State<PaidDashboard> {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      // 🔹 Users/admin PAID hanya diri sendiri
-      final userSnapshot = await firestore
-          .collection('admin_pejabat_agama')
-          .where('paidId', isEqualTo: widget.paidId)
-          .get();
+      // 🔹 Count PAID admins (Pejabat Agama)
+      final paidSnapshot = await firestore.collection('admin_pejabat_agama').get();
 
-      // 🔹 Donations ikut paidId
-      final donationSnapshot = await firestore
-          .collection('donations')
-          .where('paidId', isEqualTo: widget.paidId)
-          .get();
+      // 🔹 Count all users
+      final userSnapshot = await firestore.collection('users').get();
 
       setState(() {
         totalSuraus = surauSnapshot.size;
         approvedSuraus = approvedSnapshot.size;
         pendingSuraus = pendingSnapshot.size;
+        totalPaids = paidSnapshot.size;
         totalUsers = userSnapshot.size;
-        totalDonations = donationSnapshot.size;
         isLoading = false;
       });
-
     } catch (e) {
       debugPrint("Error loading reports: $e");
       setState(() => isLoading = false);
@@ -85,7 +78,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF87AC4F),
         title: const Text(
-          "Dashboard PAID NurSurau",
+          "Dashboard SuperAdmin NurSurau",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -104,7 +97,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Selamat Datang, Admin PAID!",
+                    "Selamat Datang, SuperAdmin!",
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -123,21 +116,33 @@ class _PaidDashboardState extends State<PaidDashboard> {
                         title: "Keseluruhan Surau",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
-                        onTap: () => _openAdminPage("All"),
+                        onTap: () => _openPage("All"),
                       ),
                       ReportCard(
                         icon: Icons.check_circle,
                         title: "Diluluskan",
                         count: approvedSuraus,
                         color: const Color(0xFF87AC4F),
-                        onTap: () => _openAdminPage("Approved"),
+                        onTap: () => _openPage("Approved"),
                       ),
                       ReportCard(
                         icon: Icons.hourglass_bottom,
                         title: "Menunggu",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
-                        onTap: () => _openAdminPage("Pending"),
+                        onTap: () => _openPage("Pending"),
+                      ),
+                      ReportCard(
+                        icon: Icons.business,
+                        title: "Pejabat Agama (PAID)",
+                        count: totalPaids,
+                        color: Colors.blue.shade700,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ManagePaidPage()),
+                          );
+                        },
                       ),
                       ReportCard(
                         icon: Icons.people,
@@ -203,11 +208,11 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
-  void _openAdminPage(String filter) {
+  void _openPage(String filter) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AdminPaidPage(filter: filter),
+        builder: (_) => ManageSurausPage(filter: filter),
       ),
     );
   }
