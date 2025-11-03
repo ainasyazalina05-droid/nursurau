@@ -28,59 +28,47 @@ class _PaidDashboardState extends State<PaidDashboard> {
   }
 
   Future<void> _fetchReportData() async {
-  try {
-    final firestore = FirebaseFirestore.instance;
+    setState(() => isLoading = true);
+    try {
+      final firestore = FirebaseFirestore.instance;
 
-    // Try filtering by paidId first
-    QuerySnapshot<Map<String, dynamic>> surauSnapshot =
-        await firestore.collection('form').where('paidId', isEqualTo: widget.paidId).get();
-    QuerySnapshot<Map<String, dynamic>> approvedSnapshot =
-        await firestore.collection('form')
-            .where('status', isEqualTo: 'approved')
-            .where('paidId', isEqualTo: widget.paidId)
-            .get();
-    QuerySnapshot<Map<String, dynamic>> pendingSnapshot =
-        await firestore.collection('form')
-            .where('status', isEqualTo: 'pending')
-            .where('paidId', isEqualTo: widget.paidId)
-            .get();
-    QuerySnapshot<Map<String, dynamic>> userSnapshot =
-        await firestore.collection('ajk_users').where('paidId', isEqualTo: widget.paidId).get();
-    QuerySnapshot<Map<String, dynamic>> donationSnapshot =
-        await firestore.collection('donations').where('paidId', isEqualTo: widget.paidId).get();
-
-    // Fallback: if no data found with paidId, fetch all documents
-    if (surauSnapshot.size == 0) {
-      surauSnapshot = await firestore.collection('form').get();
-      approvedSnapshot = await firestore.collection('form')
+      // 🔹 Semua surau (tak kira siapa submit)
+      final surauSnapshot = await firestore.collection('form').get();
+      final approvedSnapshot = await firestore
+          .collection('form')
           .where('status', isEqualTo: 'approved')
           .get();
-      pendingSnapshot = await firestore.collection('form')
+      final pendingSnapshot = await firestore
+          .collection('form')
           .where('status', isEqualTo: 'pending')
           .get();
-      userSnapshot = await firestore.collection('ajk_users').get();
-      donationSnapshot = await firestore.collection('donations').get();
+
+      // 🔹 Users/admin PAID hanya diri sendiri
+      final userSnapshot = await firestore
+          .collection('admin_pejabat_agama')
+          .where('paidId', isEqualTo: widget.paidId)
+          .get();
+
+      // 🔹 Donations ikut paidId
+      final donationSnapshot = await firestore
+          .collection('donations')
+          .where('paidId', isEqualTo: widget.paidId)
+          .get();
+
+      setState(() {
+        totalSuraus = surauSnapshot.size;
+        approvedSuraus = approvedSnapshot.size;
+        pendingSuraus = pendingSnapshot.size;
+        totalUsers = userSnapshot.size;
+        totalDonations = donationSnapshot.size;
+        isLoading = false;
+      });
+
+    } catch (e) {
+      debugPrint("Error loading reports: $e");
+      setState(() => isLoading = false);
     }
-
-    setState(() {
-      totalSuraus = surauSnapshot.size;
-      approvedSuraus = approvedSnapshot.size;
-      pendingSuraus = pendingSnapshot.size;
-      totalUsers = userSnapshot.size;
-      totalDonations = donationSnapshot.size;
-      isLoading = false;
-    });
-
-    // Debug prints to see results in Chrome console
-    debugPrint("surau: $totalSuraus, approved: $approvedSuraus, pending: $pendingSuraus");
-    debugPrint("users: $totalUsers, donations: $totalDonations");
-
-  } catch (e) {
-    debugPrint("Error loading reports: $e");
-    setState(() => isLoading = false);
   }
-}
-
 
   void _logout() {
     Navigator.pushAndRemoveUntil(
@@ -109,16 +97,15 @@ class _PaidDashboardState extends State<PaidDashboard> {
         ],
       ),
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     "Selamat Datang, Admin PAID!",
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF87AC4F)),
@@ -131,38 +118,36 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      _buildReportCard(
-                        Icons.mosque,
-                        "Keseluruhan Surau",
-                        totalSuraus,
-                        Color(0xFF87AC4F),
-                        onTap: () => _openAdminPage(context, "All"),
+                      ReportCard(
+                        icon: Icons.mosque,
+                        title: "Keseluruhan Surau",
+                        count: totalSuraus,
+                        color: const Color(0xFF87AC4F),
+                        onTap: () => _openAdminPage("All"),
                       ),
-                      _buildReportCard(
-                        Icons.check_circle,
-                        "Diluluskan",
-                        approvedSuraus,
-                        Color(0xFF87AC4F),
-                        onTap: () => _openAdminPage(context, "Approved"),
+                      ReportCard(
+                        icon: Icons.check_circle,
+                        title: "Diluluskan",
+                        count: approvedSuraus,
+                        color: const Color(0xFF87AC4F),
+                        onTap: () => _openAdminPage("Approved"),
                       ),
-                      _buildReportCard(
-                        Icons.hourglass_bottom,
-                        "Menunggu",
-                        pendingSuraus,
-                        Colors.orange.shade800,
-                        onTap: () => _openAdminPage(context, "Pending"),
+                      ReportCard(
+                        icon: Icons.hourglass_bottom,
+                        title: "Menunggu",
+                        count: pendingSuraus,
+                        color: Colors.orange.shade800,
+                        onTap: () => _openAdminPage("Pending"),
                       ),
-                      _buildReportCard(
-                        Icons.people,
-                        "Pengguna",
-                        totalUsers,
-                        Colors.teal.shade700,
+                      ReportCard(
+                        icon: Icons.people,
+                        title: "Pengguna",
+                        count: totalUsers,
+                        color: Colors.teal.shade700,
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const ManageUsersPage(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const ManageUsersPage()),
                           );
                         },
                       ),
@@ -184,61 +169,6 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
- Widget _buildReportCard(
-  IconData icon,
-  String title,
-  int count,
-  Color color, {
-  VoidCallback? onTap,
-}) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFF87AC4F).withOpacity(0.35)),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xFF1B5E20).withOpacity(0.1),
-          blurRadius: 10,
-          offset: const Offset(0, 5),
-        ),
-      ],
-    ),
-    padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 40),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // ✅ Only the icon is clickable + hover effect
-        _HoverIcon(
-          icon: icon,
-          color: color,
-          onTap: onTap, // Pass the onTap here
-        ),
-        const SizedBox(height: 10),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
   Widget _buildPieChart() {
     final approved = approvedSuraus.toDouble();
     final pending = pendingSuraus.toDouble();
@@ -254,7 +184,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
           centerSpaceRadius: 45,
           sections: [
             PieChartSectionData(
-              color: Color(0xFF87AC4F),
+              color: const Color(0xFF87AC4F),
               value: (approved / total) * 100,
               title: "Diluluskan\n$approvedSuraus",
               radius: 70,
@@ -273,7 +203,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
-  void _openAdminPage(BuildContext context, String filter) {
+  void _openAdminPage(String filter) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -282,48 +212,56 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 }
-class _HoverIcon extends StatefulWidget {
+
+// 🔹 Reusable ReportCard widget
+class ReportCard extends StatelessWidget {
   final IconData icon;
+  final String title;
+  final int count;
   final Color color;
   final VoidCallback? onTap;
 
-  const _HoverIcon({
+  const ReportCard({
+    super.key,
     required this.icon,
+    required this.title,
+    required this.count,
     required this.color,
     this.onTap,
   });
 
   @override
-  State<_HoverIcon> createState() => _HoverIconState();
-}
-
-class _HoverIconState extends State<_HoverIcon> {
-  bool isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap, // ✅ Only the icon reacts to click
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          transform: Matrix4.identity()
-            ..scale(isHovered ? 1.15 : 1.0),
-          child: Icon(
-            widget.icon,
-            size: 70,
-            color: isHovered
-                ? widget.color.withOpacity(0.7)
-                : widget.color,
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.35)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 46, color: color),
+            const SizedBox(height: 10),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(count.toString(),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          ],
         ),
       ),
     );
   }
 }
-
-
