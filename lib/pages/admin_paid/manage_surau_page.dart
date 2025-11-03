@@ -42,55 +42,88 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  Future<void> _confirmAndUpdateStatus(String newStatus) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(newStatus == 'approved' ? 'Sahkan Kelulusan' : 'Sahkan Penolakan'),
-        content: Text(
-          'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
-            ),
-            child: const Text('Ya', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+ // 🔥 Fungsi untuk sahkan dan kemas kini status surau
+Future<void> _confirmAndUpdateStatus(String newStatus) async {
+  // Papar popup pengesahan sebelum update
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(newStatus == 'approved' ? 'Sahkan Kelulusan' : 'Sahkan Penolakan'),
+      content: Text(
+        'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
       ),
-    );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
+          ),
+          child: const Text('Ya', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
 
-    if (confirm == true) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('form')
-            .doc(widget.docId)
-            .update({'status': newStatus});
+  if (confirm == true) {
+    try {
+      final formRef =
+          FirebaseFirestore.instance.collection('form').doc(widget.docId);
 
-        if (mounted) {
-          setState(() {
-            surauData?['status'] = newStatus;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
-              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
-            ),
-          );
-        }
-      } catch (e) {
+      // 🟢 Update status dalam collection 'form'
+      await formRef.update({'status': newStatus});
+
+      // Ambil semula data form (untuk sync ke 'suraus')
+      final formSnap = await formRef.get();
+      final formData = formSnap.data();
+
+      // Rujukan dokumen dalam 'suraus'
+      final surauRef = FirebaseFirestore.instance
+          .collection('suraus')
+          .doc(widget.docId);
+
+      if (newStatus == 'approved') {
+  // ✅ Kalau status = approved → set approved = true
+  await surauRef.set({
+    'name': formData?['surauName'] ?? '-',
+    'address': formData?['surauAddress'] ?? '-',
+    'nazirName': formData?['ajkName'] ?? '-',
+    'nazirPhone': formData?['phone'] ?? '-',
+    'status': newStatus, // 💬 Simpan status semasa
+    'approved': true, // 🟢 Auto true bila status = approved
+  }, SetOptions(merge: true));
+} else {
+  // 🚫 Kalau bukan approved (contoh pending / rejected) → false
+  await surauRef.set({
+    'status': newStatus, // 💬 Simpan status semasa juga
+    'approved': false, // 🔴 Auto false bila status bukan approved
+  }, SetOptions(merge: true));
+}
+
+      // Papar mesej berjaya
+      if (mounted) {
+        setState(() {
+          surauData?['status'] = newStatus;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ralat: $e')),
+          SnackBar(
+            content: Text('Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
+            backgroundColor:
+                newStatus == 'approved' ? Colors.green : Colors.red,
+          ),
         );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ralat: $e')),
+      );
     }
   }
+}
+
 
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
@@ -270,3 +303,4 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     );
   }
 }
+
