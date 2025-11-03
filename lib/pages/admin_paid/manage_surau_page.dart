@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ManageSurauPage extends StatefulWidget {
-  final String docId;
+  final String docId; // ✅ only one required parameter
+
   const ManageSurauPage({super.key, required this.docId});
 
   @override
@@ -23,7 +24,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
   Future<void> _fetchFormData() async {
     try {
-      final docRef = FirebaseFirestore.instance.collection('form').doc(widget.docId);
+      final docRef =
+          FirebaseFirestore.instance.collection('form').doc(widget.docId);
       final formSnap = await docRef.get();
       final ajkSnap = await docRef.collection('ajk').doc('ajk_data').get();
 
@@ -46,7 +48,9 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(newStatus == 'approved' ? 'Sahkan Kelulusan' : 'Sahkan Penolakan'),
+        title: Text(newStatus == 'approved'
+            ? 'Sahkan Kelulusan'
+            : 'Sahkan Penolakan'),
         content: Text(
           'Adakah anda pasti untuk ${newStatus == 'approved' ? 'meluluskan' : 'menolak'} surau ini?',
         ),
@@ -58,7 +62,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
+              backgroundColor:
+                  newStatus == 'approved' ? Colors.green : Colors.red,
             ),
             child: const Text('Ya', style: TextStyle(color: Colors.white)),
           ),
@@ -79,8 +84,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
-              backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
+              content: Text(
+                  'Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
+              backgroundColor:
+                  newStatus == 'approved' ? Colors.green : Colors.red,
             ),
           );
         }
@@ -95,7 +102,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return Color(0xFF87AC4F);
+        return const Color(0xFF87AC4F);
       case 'rejected':
         return Colors.red;
       default:
@@ -103,7 +110,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  // ✅ Fungsi ni letak SINI (bukan dalam build)
   String _translateStatus(String? status) {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -130,13 +136,18 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF87AC4F)),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF87AC4F),
+              ),
             ),
             const Divider(),
             ...info.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text("${e.key} : ${e.value}", style: const TextStyle(fontSize: 16)),
+                child: Text("${e.key} : ${e.value}",
+                    style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],
@@ -156,7 +167,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Color(0xFF87AC4F),
+          backgroundColor: const Color(0xFF87AC4F),
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -186,7 +197,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF87AC4F),
+        backgroundColor: const Color(0xFF87AC4F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -224,7 +235,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                 ],
               ),
               const SizedBox(height: 20),
-
               if (ajkData != null)
                 _buildInfoCard("Maklumat AJK", {
                   "Nama AJK": ajkData?['ajkName'] ?? '-',
@@ -234,31 +244,37 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                   "Kata Laluan": ajkData?['password'] ?? '-',
                 }),
               const SizedBox(height: 40),
-
               if ((surauData?['status'] ?? '') == "pending")
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("approved"),
-                      icon: const Icon(Icons.check_circle_outline, size: 28),
-                      label: const Text("Luluskan", style: TextStyle(fontSize: 18)),
+                      icon:
+                          const Icon(Icons.check_circle_outline, size: 28),
+                      label: const Text("Luluskan",
+                          style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:  Color(0xFF87AC4F),
+                        backgroundColor: const Color(0xFF87AC4F),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("rejected"),
                       icon: const Icon(Icons.cancel_outlined, size: 28),
-                      label: const Text("Ditolak", style: TextStyle(fontSize: 18)),
+                      label: const Text("Ditolak",
+                          style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red[600],
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ],

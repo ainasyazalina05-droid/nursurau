@@ -75,20 +75,41 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
+<<<<<<< HEAD
       appBar: AppBar(
         backgroundColor: const Color(0xFF87AC4F),
         title: const Text(
           "Dashboard SuperAdmin NurSurau",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+=======
+     appBar: AppBar(
+  centerTitle: true,
+  title: Text(
+    _pageTitle,
+    style: const TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  backgroundColor: const Color(0xFF87AC4F),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white, // Text & icon color
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
-          ),
-        ],
+        onPressed: () => _showLogoutDialog(context),
+        icon: const Icon(Icons.logout, color: Colors.white),
+        label: const Text(
+          "Log Keluar",
+          style: TextStyle(color: Colors.white),
+>>>>>>> 9d3aae7e6173f12d6099c18837c1acfda5cae749
+        ),
       ),
+    ),
+  ],
+),
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
           : SingleChildScrollView(
@@ -219,7 +240,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
 }
 
 // 🔹 Reusable ReportCard widget
-class ReportCard extends StatelessWidget {
+class ReportCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final int count;
@@ -236,37 +257,84 @@ class ReportCard extends StatelessWidget {
   });
 
   @override
+  State<ReportCard> createState() => _ReportCardState();
+}
+
+class _ReportCardState extends State<ReportCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.color.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          MouseRegion(
+            cursor: SystemMouseCursors.click, // 👉 tukar cursor ke jari
+            onEnter: (_) => setState(() => _isHovered = true),
+            onExit: (_) => setState(() => _isHovered = false),
+            child: GestureDetector(
+              onTap: widget.onTap, // klik hanya icon
+              child: AnimatedScale(
+                scale: _isHovered ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: _isHovered
+                        ? [
+                            BoxShadow(
+                              color: widget.color.withOpacity(0.4),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    size: 46,
+                    color: _isHovered
+                        ? widget.color.withOpacity(0.9)
+                        : widget.color,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 46, color: color),
-            const SizedBox(height: 10),
-            Text(title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            Text(count.toString(),
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-          ],
-        ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.count.toString(),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: widget.color,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
