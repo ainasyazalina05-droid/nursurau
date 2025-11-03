@@ -115,6 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                 controller: _usernameController,
                 decoration: const InputDecoration(
                   labelText: "Nama Pengguna",
+                  hintText: "Masukkan nama surau anda dalam huruf kecil dan rapat contoh: al-amin",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person),
                 ),
