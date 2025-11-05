@@ -140,7 +140,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
         children: [
           // 🔹 Background image
           Image.asset(
-            'assets/background_image.jpg', 
+            'assets/background_image.png', 
             fit: BoxFit.cover,
           ),
 

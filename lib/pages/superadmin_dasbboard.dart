@@ -41,15 +41,18 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      final paidSnapshot = await firestore.collection('admin_pejabat_agama').get();
-      final userSnapshot = await firestore.collection('users').get();
+      final paidSnapshot =
+          await firestore.collection('admin_pejabat_agama').get();
+
+      // ✅ Fixed this line only — collection name changed to 'ajk_users'
+      final userSnapshot = await firestore.collection('ajk_users').get();
 
       setState(() {
         totalSuraus = surauSnapshot.size;
         approvedSuraus = approvedSnapshot.size;
         pendingSuraus = pendingSnapshot.size;
         totalPaids = paidSnapshot.size;
-        totalUsers = userSnapshot.size;
+        totalUsers = userSnapshot.size; // fixed to ajk_users
         isLoading = false;
       });
     } catch (e) {
@@ -259,8 +262,8 @@ class ReportCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(title,
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(count.toString(),
                 style: TextStyle(
@@ -270,10 +273,8 @@ class ReportCard extends StatelessWidget {
       ),
     );
   }
-  
 }
 
-// 🔹 Surau List Page
 class SurauListPage extends StatelessWidget {
   final String statusFilter;
 
@@ -296,23 +297,29 @@ class SurauListPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: filteredQuery.snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final suraus = snapshot.data!.docs;
-          if (suraus.isEmpty) return const Center(child: Text("Tiada surau dijumpai."));
+          if (suraus.isEmpty) {
+            return const Center(child: Text("Tiada surau dijumpai."));
+          }
 
           return ListView.builder(
             itemCount: suraus.length,
             itemBuilder: (context, index) {
-              final surau = suraus[index];
+              final data = suraus[index].data() as Map<String, dynamic>? ?? {};
+
               return ListTile(
-                title: Text(surau['surauName'] ?? '-'),
-                subtitle: Text(surau['surauAddress'] ?? '-'),
+                title: Text(data['surauName'] ?? '-'),
+                subtitle: Text(data['surauAddress'] ?? '-'),
                 trailing: Text(
-                  (surau['status'] ?? '-').toUpperCase(),
+                  (data['status'] ?? '-').toString().toUpperCase(),
                   style: TextStyle(
-                    color: surau['status'] == 'approved'
+                    color: data['status'] == 'approved'
                         ? Colors.green
-                        : surau['status'] == 'pending'
+                        : data['status'] == 'pending'
                             ? Colors.orange
                             : Colors.red,
                     fontWeight: FontWeight.bold,
@@ -322,7 +329,7 @@ class SurauListPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ManageSurauPage(docId: surau.id),
+                      builder: (_) => ManageSurauPage(docId: suraus[index].id),
                     ),
                   );
                 },
