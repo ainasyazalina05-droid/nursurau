@@ -1,156 +1,141 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ViewSurauPage extends StatelessWidget {
+class ViewSurauPage extends StatefulWidget {
   final String docId;
   const ViewSurauPage({super.key, required this.docId});
 
   @override
+  State<ViewSurauPage> createState() => _ViewSurauPageState();
+}
+
+class _ViewSurauPageState extends State<ViewSurauPage> {
+  Map<String, dynamic>? surauData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSurau();
+  }
+
+  Future<void> _loadSurau() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('suraus')
+          .doc(widget.docId)
+          .get();
+
+      if (doc.exists) {
+        setState(() {
+          surauData = doc.data();
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      debugPrint("Ralat paparan surau: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (surauData == null) {
+      return const Scaffold(
+        body: Center(child: Text("Maklumat surau tidak dijumpai.")),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Maklumat Surau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: Text(surauData!['name'] ?? "Maklumat Surau"),
         backgroundColor: const Color(0xFF87AC4F),
-        iconTheme: const IconThemeData(color: Colors.white), // ⬅️ back arrow white
-        centerTitle: true,
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('suraus')
-            .doc(docId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(
-              child: Text(
-                "Maklumat surau tidak dijumpai.",
-                style: TextStyle(fontSize: 16),
+      backgroundColor: const Color(0xFFF6F9F2),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (surauData!['imageUrl'] != null &&
+                (surauData!['imageUrl'] as String).isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  surauData!['imageUrl'],
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
-            );
-          }
-
-          final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-
-          final String name = data['name'] ?? 'Nama tidak tersedia';
-          final String address = data['address'] ?? '-';
-          final String? imageUrl = data['imageUrl'];
-          final bool approved = data['approved'] ?? false;
-          final String nazirName = data['nazirName'] ?? 'Tidak dinyatakan';
-          final String nazirPhone = data['nazirPhone'] ?? 'Tidak dinyatakan';
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 🖼️ Gambar Surau
-                if (imageUrl != null && imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                else
-                  Container(
-                    height: 200,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.image_not_supported,
-                        size: 80, color: Colors.grey),
+            const SizedBox(height: 20),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-
-                const SizedBox(height: 20),
-
-                // 📍 Nama Surau
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF87AC4F),
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // 📫 Alamat
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.location_on, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        address,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-                const Divider(),
-
-                // 🧍‍♂️ Nama Nazir
-                ListTile(
-                  leading: const Icon(Icons.person, color: Color(0xFF87AC4F)),
-                  title: const Text("Nama Nazir"),
-                  subtitle: Text(
-                    nazirName,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-
-                // ☎️ No Telefon Nazir
-                ListTile(
-                  leading: const Icon(Icons.phone, color: Color(0xFF87AC4F)),
-                  title: const Text("No. Telefon Nazir"),
-                  subtitle: Text(
-                    nazirPhone,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-
-                // 📋 Status
-                ListTile(
-                  leading: const Icon(Icons.verified, color: Color(0xFF87AC4F)),
-                  title: const Text("Status"),
-                  subtitle: Text(
-                    approved ? "Maklumat Telah Dimasukkan " : "Maklumat Belum Dimasukkan",
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Maklumat Nazir",
                     style: TextStyle(
-                      color: approved ? Colors.green : Colors.orange,
+                      color: Color(0xFF87AC4F),
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-
-                // 🕒 Tarikh Dicipta
-                if (data['createdAt'] != null)
-                  ListTile(
-                    leading: const Icon(Icons.calendar_today,
-                        color: Color(0xFF87AC4F)),
-                    title: const Text("Tarikh Dicipta"),
-                    subtitle: Text(
-                      data['createdAt'].toDate().toString(),
-                    ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Nama Nazir : ",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        surauData!['nazirName'] ?? '-',
+                        style: const TextStyle(color: Color(0xFF87AC4F)),
+                      ),
+                    ],
                   ),
-              ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Nombor Telefon : ",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        surauData!['nazirPhone'] ?? '-',
+                        style: const TextStyle(color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

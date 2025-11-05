@@ -80,7 +80,8 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF87AC4F)))
+              child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
+            )
           : surauList.isEmpty
               ? const Center(child: Text("Tiada data surau dijumpai."))
               : ListView.builder(

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:nursurau/pages/admin_paid/manage_users_page.dart';
-import 'package:nursurau/pages/unified_login.dart';
 import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
+import 'package:nursurau/pages/unified_login.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -19,6 +19,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int totalPaids = 0;
   int totalUsers = 0;
   bool isLoading = true;
+
+  final String _pageTitle = "Dashboard SuperAdmin NurSurau";
 
   @override
   void initState() {
@@ -40,7 +42,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           .collection('form')
           .where('status', isEqualTo: 'pending')
           .get();
-
       final paidSnapshot = await firestore.collection('admin_pejabat_agama').get();
       final userSnapshot = await firestore.collection('users').get();
 
@@ -66,6 +67,29 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
   }
 
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Log Keluar"),
+        content: const Text("Adakah anda pasti ingin log keluar?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _logout();
+            },
+            child: const Text("Ya, Log Keluar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _openSurauList(String statusFilter) {
     Navigator.push(
       context,
@@ -80,22 +104,31 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF87AC4F),
-        title: const Text(
-          "Dashboard SuperAdmin NurSurau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
         centerTitle: true,
+        title: Text(
+          _pageTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(0xFF87AC4F),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              onPressed: () => _showLogoutDialog(context),
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text("Log Keluar",
+                  style: TextStyle(color: Colors.white)),
+            ),
           ),
         ],
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+              child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -105,11 +138,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   const Text(
                     "Selamat Datang, SuperAdmin!",
                     style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF87AC4F)),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF87AC4F),
+                    ),
                   ),
                   const SizedBox(height: 20),
+
+                  // Grid cards
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -128,7 +164,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         icon: Icons.check_circle,
                         title: "Diluluskan",
                         count: approvedSuraus,
-                        color: const Color(0xFF87AC4F),
+                        color: Colors.green.shade700,
                         onTap: () => _openSurauList("Approved"),
                       ),
                       ReportCard(
@@ -143,14 +179,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         title: "Pejabat Agama (PAID)",
                         count: totalPaids,
                         color: Colors.blue.shade700,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Fungsi ini belum tersedia."),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
+                        onTap: () {},
                       ),
                       ReportCard(
                         icon: Icons.people,
@@ -167,13 +196,16 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 30),
+
                   const Text(
                     "Taburan Status Surau",
                     style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF87AC4F)),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF87AC4F),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Center(child: _buildPieChart()),
@@ -218,7 +250,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 }
 
-class ReportCard extends StatelessWidget {
+// 🔹 Kad laporan dengan animasi hover
+class ReportCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final int count;
@@ -235,45 +268,63 @@ class ReportCard extends StatelessWidget {
   });
 
   @override
+  State<ReportCard> createState() => _ReportCardState();
+}
+
+class _ReportCardState extends State<ReportCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _isHovered ? 1.05 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: widget.color.withOpacity(0.35)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 46, color: color),
-            const SizedBox(height: 10),
-            Text(title,
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            Text(count.toString(),
-                style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-          ],
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(widget.icon, size: 46, color: widget.color),
+                const SizedBox(height: 10),
+                Text(widget.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Text(widget.count.toString(),
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: widget.color)),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
-  
 }
 
-// 🔹 Surau List Page
+// 🔹 Senarai Surau untuk setiap status
 class SurauListPage extends StatelessWidget {
   final String statusFilter;
 
@@ -296,9 +347,13 @@ class SurauListPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: filteredQuery.snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final suraus = snapshot.data!.docs;
-          if (suraus.isEmpty) return const Center(child: Text("Tiada surau dijumpai."));
+          if (suraus.isEmpty) {
+            return const Center(child: Text("Tiada surau dijumpai."));
+          }
 
           return ListView.builder(
             itemCount: suraus.length,

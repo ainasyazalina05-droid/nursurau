@@ -20,6 +20,8 @@ class _PaidDashboardState extends State<PaidDashboard> {
   int totalAjk = 0;
   bool isLoading = true;
 
+  final String _pageTitle = "Dashboard PAID NurSurau";
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +33,6 @@ class _PaidDashboardState extends State<PaidDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // Kira semua surau
       final surauSnapshot = await firestore.collection('form').get();
       final approvedSnapshot = await firestore
           .collection('form')
@@ -41,16 +42,13 @@ class _PaidDashboardState extends State<PaidDashboard> {
           .collection('form')
           .where('status', isEqualTo: 'pending')
           .get();
-
-      // Kira semua pengguna (AJK dan User)
       final ajkSnapshot = await firestore.collection('ajk_users').get();
-      
 
       setState(() {
         totalSuraus = surauSnapshot.size;
         approvedSuraus = approvedSnapshot.size;
         pendingSuraus = pendingSnapshot.size;
-        totalAjk = ajkSnapshot.size ;
+        totalAjk = ajkSnapshot.size;
         isLoading = false;
       });
     } catch (e) {
@@ -94,25 +92,35 @@ class _PaidDashboardState extends State<PaidDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
+
       appBar: AppBar(
         centerTitle: true,
-        title: const Text(
-          "Dashboard PAID NurSurau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          _pageTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: const Color(0xFF87AC4F),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white, // Text & icon color
+              ),
               onPressed: () => _showLogoutDialog(context),
               icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
+              label: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ],
       ),
+
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
@@ -131,6 +139,8 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // Kad laporan
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -167,13 +177,18 @@ class _PaidDashboardState extends State<PaidDashboard> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const ManageUsersPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const ManageUsersPage(),
+                            ),
                           );
                         },
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 30),
+
+                  // Carta pai
                   const Text(
                     "Taburan Status Surau",
                     style: TextStyle(
@@ -232,7 +247,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
   }
 }
 
-// 🔹 Reusable ReportCard
+// 🔹 Kad ringkas laporan
 class ReportCard extends StatefulWidget {
   final IconData icon;
   final String title;
@@ -253,9 +268,8 @@ class ReportCard extends StatefulWidget {
   State<ReportCard> createState() => _ReportCardState();
 }
 
-// Ini class State yang betul
 class _ReportCardState extends State<ReportCard> {
-  bool _isHovered = false; // kena define variable _isHovered
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -297,16 +311,23 @@ class _ReportCardState extends State<ReportCard> {
             ),
           ),
           const SizedBox(height: 10),
-          Text(widget.title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(widget.count.toString(),
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: widget.color)),
+          Text(
+            widget.count.toString(),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: widget.color,
+            ),
+          ),
         ],
       ),
     );

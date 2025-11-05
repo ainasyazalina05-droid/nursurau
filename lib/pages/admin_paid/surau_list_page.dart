@@ -148,7 +148,8 @@ class SurauListPage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                ViewSurauPage(docId: docSnapshot.id),
+                               // ViewSurauPage(docId: docSnapshot.id),
+                                Placeholder(), 
                           ),
                         );
                       } else {
