@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ManageSurauPage extends StatefulWidget {
   final String docId;
-
   const ManageSurauPage({super.key, required this.docId});
 
   @override
@@ -12,6 +11,7 @@ class ManageSurauPage extends StatefulWidget {
 
 class _ManageSurauPageState extends State<ManageSurauPage> {
   Map<String, dynamic>? surauData;
+  Map<String, dynamic>? ajkData;
   bool isLoading = true;
   String? errorMessage;
 
@@ -31,6 +31,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
       setState(() {
         surauData = formSnap.data();
+        ajkData = formSnap.data()?['ajkData'];
         isLoading = false;
       });
     } catch (e) {
@@ -41,6 +42,7 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
+  // 🔥 Fungsi untuk sahkan & update status surau
   Future<void> _confirmAndUpdateStatus(String newStatus) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -70,10 +72,35 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
-            .collection('form')
-            .doc(widget.docId)
-            .update({'status': newStatus});
+        final formRef =
+            FirebaseFirestore.instance.collection('form').doc(widget.docId);
+
+        // 🟢 Update status dalam 'form'
+        await formRef.update({'status': newStatus});
+
+        // Ambil semula data form
+        final formSnap = await formRef.get();
+        final formData = formSnap.data();
+
+        // Sync ke 'suraus'
+        final surauRef =
+            FirebaseFirestore.instance.collection('suraus').doc(widget.docId);
+
+        if (newStatus == 'approved') {
+          await surauRef.set({
+            'name': formData?['surauName'] ?? '-',
+            'address': formData?['surauAddress'] ?? '-',
+            'nazirName': formData?['ajkName'] ?? '-',
+            'nazirPhone': formData?['phone'] ?? '-',
+            'status': newStatus,
+            'approved': true,
+          }, SetOptions(merge: true));
+        } else {
+          await surauRef.set({
+            'status': newStatus,
+            'approved': false,
+          }, SetOptions(merge: true));
+        }
 
         if (mounted) {
           setState(() {
@@ -81,7 +108,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Status dikemas kini kepada $newStatus'),
+              content: Text(
+                  'Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
               backgroundColor:
                   newStatus == 'approved' ? Colors.green : Colors.red,
             ),
@@ -103,6 +131,19 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
         return Colors.red;
       default:
         return Colors.orange;
+    }
+  }
+
+  String _translateStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return 'DILULUSKAN';
+      case 'pending':
+        return 'MENUNGGU';
+      case 'rejected':
+        return 'DITOLAK';
+      default:
+        return '-';
     }
   }
 
@@ -129,7 +170,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
             ...info.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text("${e.key} : ${e.value}"),
+                child: Text(
+                  "${e.key} : ${e.value}",
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -212,6 +256,15 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                   ),
                 ],
               ),
+            const SizedBox(height: 20),
+            if (ajkData != null)
+              _buildInfoCard("Maklumat AJK", {
+                "Nama AJK": ajkData?['ajkName'] ?? '-',
+                "No. IC": ajkData?['ic'] ?? '-',
+                "No. Telefon": ajkData?['phone'] ?? '-',
+                "Emel": ajkData?['email'] ?? '-',
+                "Kata Laluan": ajkData?['password'] ?? '-',
+              }),
           ],
         ),
       ),
