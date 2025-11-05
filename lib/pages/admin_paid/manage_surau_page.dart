@@ -146,8 +146,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
             ...info.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text("${e.key} : ${e.value}",
-                    style: const TextStyle(fontSize: 16)),
+                child: Text(
+                  "${e.key} : ${e.value}",
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -250,10 +252,11 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("approved"),
-                      icon:
-                          const Icon(Icons.check_circle_outline, size: 28),
-                      label: const Text("Luluskan",
-                          style: TextStyle(fontSize: 18)),
+                      icon: const Icon(Icons.check_circle_outline, size: 28),
+                      label: const Text(
+                        "Luluskan",
+                        style: TextStyle(fontSize: 18),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF87AC4F),
                         foregroundColor: Colors.white,
@@ -266,8 +269,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                     ElevatedButton.icon(
                       onPressed: () => _confirmAndUpdateStatus("rejected"),
                       icon: const Icon(Icons.cancel_outlined, size: 28),
-                      label: const Text("Ditolak",
-                          style: TextStyle(fontSize: 18)),
+                      label: const Text(
+                        "Ditolak",
+                        style: TextStyle(fontSize: 18),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red[600],
                         foregroundColor: Colors.white,
