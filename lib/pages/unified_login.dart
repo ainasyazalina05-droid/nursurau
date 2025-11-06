@@ -134,6 +134,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       backgroundColor: const Color(0xFFEFF3E0), // Soft greenish background
       body: Center(
         child: SingleChildScrollView(
@@ -151,6 +152,16 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 25),
+=======
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 🔹 Background image
+          Image.asset(
+            'assets/background_image.png', 
+            fit: BoxFit.cover,
+          ),
+>>>>>>> 0568c68b8ce85be68edaa87f966336989071e61e
 
               Image.asset('assets/logo.png', width: 180, height: 180),
               const SizedBox(height: 20),

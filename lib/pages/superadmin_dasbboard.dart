@@ -18,6 +18,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int pendingSuraus = 0;
   int totalPaids = 0;
   int totalUsers = 0;
+  int totalDonations = 0;
+  List<Map<String, dynamic>> pendingAdmins = [];
   bool isLoading = true;
 
   final String _pageTitle = "Dashboard SuperAdmin NurSurau";
@@ -33,24 +35,35 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
+      // 🔹 Surau
       final surauSnapshot = await firestore.collection('form').get();
-      final approvedSnapshot = await firestore
-          .collection('form')
-          .where('status', isEqualTo: 'approved')
-          .get();
-      final pendingSnapshot = await firestore
-          .collection('form')
+      final approvedSnapshot = await firestore.collection('form')
+          .where('status', isEqualTo: 'approved').get();
+      final pendingSnapshot = await firestore.collection('form')
+          .where('status', isEqualTo: 'pending').get();
+
+      // 🔹 Users
+      final userSnapshot = await firestore.collection('ajk_users').get();
+      final donationSnapshot = await firestore.collection('donations').get();
+
+      // 🔹 Pending Admin PAID
+      final pendingAdminsSnapshot = await firestore
+          .collection('admin_pejabat_agama')
           .where('status', isEqualTo: 'pending')
           .get();
-      final paidSnapshot = await firestore.collection('admin_pejabat_agama').get();
-      final userSnapshot = await firestore.collection('users').get();
+
+      final paidSnapshot =
+          await firestore.collection('admin_pejabat_agama').get();
+
+      // ✅ Fixed this line only — collection name changed to 'ajk_users'
+      final userSnapshot = await firestore.collection('ajk_users').get();
 
       setState(() {
         totalSuraus = surauSnapshot.size;
         approvedSuraus = approvedSnapshot.size;
         pendingSuraus = pendingSnapshot.size;
         totalPaids = paidSnapshot.size;
-        totalUsers = userSnapshot.size;
+        totalUsers = userSnapshot.size; // fixed to ajk_users
         isLoading = false;
       });
     } catch (e) {
@@ -60,11 +73,16 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 
   void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
-      (route) => false,
-    );
+    Navigator.pop(context); // Atau navigate ke login page
+  }
+
+  // 🔹 Approve/Reject Admin PAID
+  Future<void> approveAdmin(String docId) async {
+    await FirebaseFirestore.instance
+        .collection('admin_pejabat_agama')
+        .doc(docId)
+        .update({'status': 'active'});
+    _fetchReportData();
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -90,19 +108,17 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
   }
 
-  void _openSurauList(String statusFilter) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SurauListPage(statusFilter: statusFilter),
-      ),
-    );
+  Future<void> rejectAdmin(String docId) async {
+    await FirebaseFirestore.instance
+        .collection('admin_pejabat_agama')
+        .doc(docId)
+        .delete();
+    _fetchReportData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
         centerTitle: true,
         title: Text(
@@ -112,6 +128,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        title: const Text("SuperAdmin Dashboard"),
         backgroundColor: const Color(0xFF87AC4F),
         actions: [
           Padding(
@@ -124,12 +141,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   style: TextStyle(color: Colors.white)),
             ),
           ),
+          IconButton(onPressed: _logout, icon: const Icon(Icons.logout))
         ],
       ),
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
             )
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -152,27 +171,33 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     mainAxisSpacing: 16,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
                     children: [
                       ReportCard(
                         icon: Icons.mosque,
                         title: "Keseluruhan Surau",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
-                        onTap: () => _openSurauList("All"),
+                        onTap: () {
+                          // Boleh buka page semua surau
+                        },
                       ),
-                      ReportCard(
+                      buildReportCard(
                         icon: Icons.check_circle,
                         title: "Diluluskan",
                         count: approvedSuraus,
                         color: Colors.green.shade700,
                         onTap: () => _openSurauList("Approved"),
+                        color: const Color(0xFF87AC4F),
+                        onTap: () {},
                       ),
-                      ReportCard(
+                      buildReportCard(
                         icon: Icons.hourglass_bottom,
                         title: "Menunggu",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
-                        onTap: () => _openSurauList("Pending"),
+                        onTap: () {},
                       ),
                       ReportCard(
                         icon: Icons.business,
@@ -182,16 +207,50 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         onTap: () {},
                       ),
                       ReportCard(
+                      buildReportCard(
                         icon: Icons.people,
                         title: "Pengguna",
                         count: totalUsers,
                         color: Colors.teal.shade700,
+                        onTap: () {},
+                      ),
+                      buildReportCard(
+                        icon: Icons.admin_panel_settings,
+                        title: "Admin PAID Pending",
+                        count: pendingAdmins.length,
+                        color: Colors.redAccent,
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const ManageUsersPage()),
-                          );
+                          showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) {
+                                return SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.7,
+                                  child: ListView.builder(
+                                    itemCount: pendingAdmins.length,
+                                    itemBuilder: (context, index) {
+                                      final admin = pendingAdmins[index];
+                                      return ListTile(
+                                        title: Text(admin['username']),
+                                        subtitle: Text(admin['email'] ?? ''),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.check, color: Colors.green),
+                                              onPressed: () => approveAdmin(admin['id']),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.close, color: Colors.red),
+                                              onPressed: () => rejectAdmin(admin['id']),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              });
                         },
                       ),
                     ],
@@ -206,46 +265,40 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF87AC4F),
                     ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 10),
-                  Center(child: _buildPieChart()),
+                  Center(
+                    child: SizedBox(
+                      height: 250,
+                      width: 250,
+                      child: PieChart(
+                        PieChartData(
+                          sections: [
+                            PieChartSectionData(
+                              color: const Color(0xFF87AC4F),
+                              value: approvedSuraus.toDouble(),
+                              title: "Diluluskan\n$approvedSuraus",
+                              radius: 70,
+                              titleStyle: const TextStyle(color: Colors.white),
+                            ),
+                            PieChartSectionData(
+                              color: Colors.orange.shade700,
+                              value: pendingSuraus.toDouble(),
+                              title: "Menunggu\n$pendingSuraus",
+                              radius: 70,
+                              titleStyle: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                          borderData: FlBorderData(show: false),
+                          centerSpaceRadius: 45,
+                          sectionsSpace: 4,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _buildPieChart() {
-    final approved = approvedSuraus.toDouble();
-    final pending = pendingSuraus.toDouble();
-    final total = (approved + pending) == 0 ? 1 : (approved + pending);
-
-    return SizedBox(
-      height: 250,
-      width: 250,
-      child: PieChart(
-        PieChartData(
-          borderData: FlBorderData(show: false),
-          sectionsSpace: 4,
-          centerSpaceRadius: 45,
-          sections: [
-            PieChartSectionData(
-              color: const Color(0xFF87AC4F),
-              value: (approved / total) * 100,
-              title: "Diluluskan\n$approvedSuraus",
-              radius: 70,
-              titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
-            ),
-            PieChartSectionData(
-              color: Colors.orange.shade700,
-              value: (pending / total) * 100,
-              title: "Menunggu\n$pendingSuraus",
-              radius: 70,
-              titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -299,32 +352,29 @@ class _ReportCardState extends State<ReportCard> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(widget.icon, size: 46, color: widget.color),
-                const SizedBox(height: 10),
-                Text(widget.title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                Text(widget.count.toString(),
-                    style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: widget.color)),
-              ],
-            ),
-          ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 46, color: color),
+            const SizedBox(height: 10),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(count.toString(),
+                style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          ],
         ),
       ),
     );
   }
 }
 
-// 🔹 Senarai Surau untuk setiap status
 class SurauListPage extends StatelessWidget {
   final String statusFilter;
 
@@ -358,16 +408,17 @@ class SurauListPage extends StatelessWidget {
           return ListView.builder(
             itemCount: suraus.length,
             itemBuilder: (context, index) {
-              final surau = suraus[index];
+              final data = suraus[index].data() as Map<String, dynamic>? ?? {};
+
               return ListTile(
-                title: Text(surau['surauName'] ?? '-'),
-                subtitle: Text(surau['surauAddress'] ?? '-'),
+                title: Text(data['surauName'] ?? '-'),
+                subtitle: Text(data['surauAddress'] ?? '-'),
                 trailing: Text(
-                  (surau['status'] ?? '-').toUpperCase(),
+                  (data['status'] ?? '-').toString().toUpperCase(),
                   style: TextStyle(
-                    color: surau['status'] == 'approved'
+                    color: data['status'] == 'approved'
                         ? Colors.green
-                        : surau['status'] == 'pending'
+                        : data['status'] == 'pending'
                             ? Colors.orange
                             : Colors.red,
                     fontWeight: FontWeight.bold,
@@ -377,7 +428,7 @@ class SurauListPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ManageSurauPage(docId: surau.id),
+                      builder: (_) => ManageSurauPage(docId: suraus[index].id),
                     ),
                   );
                 },

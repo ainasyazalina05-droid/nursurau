@@ -33,7 +33,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // Kira semua surau
+      // 🕌 Kira semua surau
       final surauSnapshot = await firestore.collection('form').get();
       final approvedSnapshot = await firestore
           .collection('form')
@@ -44,15 +44,14 @@ class _PaidDashboardState extends State<PaidDashboard> {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      // Kira semua pengguna (AJK dan User)
+      // 👥 Kira semua pengguna (AJK)
       final ajkSnapshot = await firestore.collection('ajk_users').get();
-      
 
       setState(() {
         totalSuraus = surauSnapshot.size;
         approvedSuraus = approvedSnapshot.size;
         pendingSuraus = pendingSnapshot.size;
-        totalAjk = ajkSnapshot.size ;
+        totalAjk = ajkSnapshot.size;
         isLoading = false;
       });
     } catch (e) {
@@ -102,16 +101,10 @@ class _PaidDashboardState extends State<PaidDashboard> {
           "Dashboard PAID NurSurau",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF87AC4F),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              onPressed: () => _showLogoutDialog(context),
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
-            ),
+          IconButton(
+            onPressed: () => _showLogoutDialog(context),
+            icon: const Icon(Icons.logout, color: Colors.white),
           ),
         ],
       ),
@@ -172,8 +165,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const ManageUsersPage(),
-                            ),
+                                builder: (_) => const ManageUsersPage()),
                           );
                         },
                       ),
@@ -241,21 +233,21 @@ class _PaidDashboardState extends State<PaidDashboard> {
   }
 }
 
-// 🔹 Reusable ReportCard
+// 🔹 Reusable ReportCard widget
 class ReportCard extends StatefulWidget {
-  final IconData icon;
   final String title;
   final int count;
+  final IconData icon;
   final Color color;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const ReportCard({
     super.key,
-    required this.icon,
     required this.title,
     required this.count,
+    required this.icon,
     required this.color,
-    this.onTap,
+    required this.onTap,
   });
 
   @override
@@ -267,56 +259,45 @@ class _ReportCardState extends State<ReportCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.color.withOpacity(0.35)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            onEnter: (_) => setState(() => _isHovered = true),
-            onExit: (_) => setState(() => _isHovered = false),
-            child: GestureDetector(
-              onTap: widget.onTap,
-              child: AnimatedScale(
-                scale: _isHovered ? 1.2 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                child: Icon(
-                  widget.icon,
-                  size: 46,
-                  color: _isHovered
-                      ? widget.color.withOpacity(0.9)
-                      : widget.color,
-                ),
+    return GestureDetector(
+      onTap: widget.onTap, // ✅ FIX
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: widget.color.withOpacity(0.35)), // ✅ FIX
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(widget.icon, size: 46, color: widget.color), // ✅ FIX
+            const SizedBox(height: 10),
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              widget.count.toString(),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: widget.color, // ✅ FIX
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(widget.title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(widget.count.toString(),
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: widget.color)),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
