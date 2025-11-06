@@ -48,7 +48,7 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Error fetching data: $e');
+      debugPrint('⚠ Error fetching data: $e');
     }
   }
 
@@ -127,10 +127,8 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
-                  _infoRow("Nama Nazir", nazirData?['username'] ?? 'Tiada'),
-                  _infoRow("No. IC", nazirData?['no_ic'] ?? 'Tiada'),
-                  _infoRow("Emel", nazirData?['email'] ?? 'Tiada'),
-                  _infoRow("No. Telefon", nazirData?['phone'] ?? 'Tiada'),
+                  _infoRow("Nama Nazir", surauData?['nazirName'] ?? 'Tiada'),
+                  _infoRow("No. Telefon", surauData?['nazirPhone'] ?? 'Tiada'),
 
                   const SizedBox(height: 20),
                   const Divider(),
