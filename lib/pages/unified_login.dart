@@ -4,9 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 
 // Alias import untuk elak conflict
 import 'package:nursurau/pages/admin_ajk/admin_dashboard.dart' as ajk;
+// import 'package:nursurau/pages/admin_ajk/surau_details_page.dart';
 import 'package:nursurau/pages/admin_paid/paid_dashboard.dart' as paid;
 import 'package:nursurau/pages/superadmin_dasbboard.dart';
 import 'package:nursurau/pages/unified_registeration.dart';
+
 
 class UnifiedLoginPage extends StatefulWidget {
   const UnifiedLoginPage({super.key});
@@ -53,8 +55,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
 
     try {
       // 1️⃣ Check SUPERADMIN
-      var snapshot =
-          await FirebaseFirestore.instance.collection('superadmins').doc(username).get();
+      var snapshot = await FirebaseFirestore.instance.collection('superadmins').doc(username).get();
       if (snapshot.exists) {
         final data = snapshot.data()!;
         if (data['password'] == password) {
@@ -143,67 +144,93 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
             fit: BoxFit.cover,
           ),
 
-              Image.asset('assets/logo.png', width: 180, height: 180),
-              const SizedBox(height: 20),
+          // 🔹 Optional overlay
+          Container(
+            color: Colors.black.withOpacity(0.3),
+          ),
 
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: "Nama Pengguna",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 15),
+          // 🔹 Login form
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "PORTAL NURSURAU 🌿🕌",
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 25),
+                  Image.asset('assets/logo.png', width: 180, height: 180),
+                  const SizedBox(height: 20),
 
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Kata Laluan",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 30),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: "Nama Pengguna",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                      filled: true,
+                      fillColor: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
 
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF87AC4F),
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
-                      onPressed: _login,
-                      child: const Text(
-                        "Log Masuk",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: "Kata Laluan",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock),
+                      filled: true,
+                      fillColor: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF87AC4F),
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                          onPressed: _login,
+                          child: const Text(
+                            "Log Masuk",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
+
+                  const SizedBox(height: 15),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const UnifiedRegisterPage()),
+                      );
+                    },
+                    child: const Text(
+                      "Belum ada akaun? Daftar di sini",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-
-              const SizedBox(height: 15),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const UnifiedRegisterPage()),
-                  );
-                },
-                child: const Text(
-                  "Belum ada akaun? Daftar di sini",
-                  style: TextStyle(
-                    color: Color(0xFF4C6B2C),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        );
+        ],
+      ),
+    );
   }
 }
