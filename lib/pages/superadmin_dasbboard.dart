@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:nursurau/pages/admin_paid/manage_users_page.dart';
+import 'package:nursurau/pages/pending_paid_admins_page.dart';
 import 'package:nursurau/pages/unified_login.dart';
 import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
 
@@ -17,6 +18,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int approvedSuraus = 0;
   int pendingSuraus = 0;
   int totalPaids = 0;
+  int pendingPaids = 0;
   int totalUsers = 0;
   bool isLoading = true;
 
@@ -31,6 +33,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
+      // 🔹 Surau data
       final surauSnapshot = await firestore.collection('form').get();
       final approvedSnapshot = await firestore
           .collection('form')
@@ -41,10 +44,20 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      final paidSnapshot =
-          await firestore.collection('admin_pejabat_agama').get();
+      // 🔹 PAID Admins (from users collection)
+      final paidSnapshot = await firestore
+          .collection('users')
+          .where('userType', isEqualTo: 'PAID')
+          .get();
 
-      // ✅ Fixed this line only — collection name changed to 'ajk_users'
+      // 🔹 Pending PAID Admins
+      final pendingPaidSnapshot = await firestore
+          .collection('users')
+          .where('userType', isEqualTo: 'PAID')
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      // 🔹 AJK Users
       final userSnapshot = await firestore.collection('ajk_users').get();
 
       setState(() {
@@ -52,7 +65,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         approvedSuraus = approvedSnapshot.size;
         pendingSuraus = pendingSnapshot.size;
         totalPaids = paidSnapshot.size;
-        totalUsers = userSnapshot.size; // fixed to ajk_users
+        pendingPaids = pendingPaidSnapshot.size;
+        totalUsers = userSnapshot.size;
         isLoading = false;
       });
     } catch (e) {
@@ -61,7 +75,46 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     }
   }
 
-  void _logout() {
+  // ✅ Show logout confirmation dialog
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text("Log Keluar"),
+          content: const Text("Adakah anda pasti mahu log keluar?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Batal",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF87AC4F),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _logout(context); // Proceed logout
+              },
+              child: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ✅ Perform logout and go to login page
+  void _logout(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
@@ -90,11 +143,26 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: ElevatedButton.icon(
+              onPressed: () => _showLogoutDialog(context),
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF87AC4F),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
           ),
         ],
+
       ),
       body: isLoading
           ? const Center(
@@ -143,14 +211,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       ),
                       ReportCard(
                         icon: Icons.business,
-                        title: "Pejabat Agama (PAID)",
+                        title: "Admin PAID",
                         count: totalPaids,
                         color: Colors.blue.shade700,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Fungsi ini belum tersedia."),
-                              duration: Duration(seconds: 2),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PendingPaidAdminsPage(),
                             ),
                           );
                         },
@@ -210,7 +278,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             PieChartSectionData(
               color: Colors.orange.shade700,
               value: (pending / total) * 100,
-              title: "Menunggu\n$pendingSuraus",
+              title: "Surau Menunggu\n$pendingSuraus",
+              radius: 70,
+              titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
+            ),
+            PieChartSectionData(
+              color: const Color.fromARGB(255, 134, 176, 230),
+              value: (pending / total) * 100,
+              title: "Admin PAID Menunggu\n$pendingSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),
@@ -221,6 +296,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 }
 
+// ✅ Reuse your ReportCard + SurauListPage as before
 class ReportCard extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -10,7 +10,7 @@ class PendingPaidAdminsPage extends StatefulWidget {
 
 class _PendingPaidAdminsPageState extends State<PendingPaidAdminsPage> {
   final CollectionReference paidCollection =
-      FirebaseFirestore.instance.collection('admin_pejabat_agama');
+      FirebaseFirestore.instance.collection('users');
 
   Future<void> approveAdmin(String docId) async {
     await paidCollection.doc(docId).update({'status': 'active'});
@@ -28,7 +28,11 @@ class _PendingPaidAdminsPageState extends State<PendingPaidAdminsPage> {
         backgroundColor: const Color(0xFF87AC4F),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: paidCollection.where('status', isEqualTo: 'pending').snapshots(),
+        stream: paidCollection
+        .where('userType', isEqualTo: 'PAID')
+        .where('status', isEqualTo: 'pending')
+        .snapshots(),
+
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
