@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:nursurau/pages/admin_paid/manage_users_page.dart';
-import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
 import 'package:nursurau/pages/unified_login.dart';
+import 'package:nursurau/pages/admin_paid/manage_surau_page.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -18,11 +18,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int pendingSuraus = 0;
   int totalPaids = 0;
   int totalUsers = 0;
-  int totalDonations = 0;
-  List<Map<String, dynamic>> pendingAdmins = [];
   bool isLoading = true;
-
-  final String _pageTitle = "Dashboard SuperAdmin NurSurau";
 
   @override
   void initState() {
@@ -35,20 +31,13 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // 🔹 Surau
       final surauSnapshot = await firestore.collection('form').get();
-      final approvedSnapshot = await firestore.collection('form')
-          .where('status', isEqualTo: 'approved').get();
-      final pendingSnapshot = await firestore.collection('form')
-          .where('status', isEqualTo: 'pending').get();
-
-      // 🔹 Users
-      final userSnapshot = await firestore.collection('ajk_users').get();
-      final donationSnapshot = await firestore.collection('donations').get();
-
-      // 🔹 Pending Admin PAID
-      final pendingAdminsSnapshot = await firestore
-          .collection('admin_pejabat_agama')
+      final approvedSnapshot = await firestore
+          .collection('form')
+          .where('status', isEqualTo: 'approved')
+          .get();
+      final pendingSnapshot = await firestore
+          .collection('form')
           .where('status', isEqualTo: 'pending')
           .get();
 
@@ -73,82 +62,44 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 
   void _logout() {
-    Navigator.pop(context); // Atau navigate ke login page
-  }
-
-  // 🔹 Approve/Reject Admin PAID
-  Future<void> approveAdmin(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('admin_pejabat_agama')
-        .doc(docId)
-        .update({'status': 'active'});
-    _fetchReportData();
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Log Keluar"),
-        content: const Text("Adakah anda pasti ingin log keluar?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _logout();
-            },
-            child: const Text("Ya, Log Keluar"),
-          ),
-        ],
-      ),
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
+      (route) => false,
     );
   }
 
-  Future<void> rejectAdmin(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('admin_pejabat_agama')
-        .doc(docId)
-        .delete();
-    _fetchReportData();
+  void _openSurauList(String statusFilter) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SurauListPage(statusFilter: statusFilter),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF2F7F3),
       appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          _pageTitle,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        title: const Text("SuperAdmin Dashboard"),
         backgroundColor: const Color(0xFF87AC4F),
+        title: const Text(
+          "Dashboard SuperAdmin NurSurau",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              onPressed: () => _showLogoutDialog(context),
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text("Log Keluar",
-                  style: TextStyle(color: Colors.white)),
-            ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: _logout,
           ),
-          IconButton(onPressed: _logout, icon: const Icon(Icons.logout))
         ],
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
+              child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
             )
-          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -157,154 +108,120 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   const Text(
                     "Selamat Datang, SuperAdmin!",
                     style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF87AC4F),
-                    ),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF87AC4F)),
                   ),
                   const SizedBox(height: 20),
-
-                  // Grid cards
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
                     children: [
                       ReportCard(
                         icon: Icons.mosque,
                         title: "Keseluruhan Surau",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
-                        onTap: () {
-                          // Boleh buka page semua surau
-                        },
+                        onTap: () => _openSurauList("All"),
                       ),
-                      buildReportCard(
+                      ReportCard(
                         icon: Icons.check_circle,
                         title: "Diluluskan",
                         count: approvedSuraus,
-                        color: Colors.green.shade700,
-                        onTap: () => _openSurauList("Approved"),
                         color: const Color(0xFF87AC4F),
-                        onTap: () {},
+                        onTap: () => _openSurauList("Approved"),
                       ),
-                      buildReportCard(
+                      ReportCard(
                         icon: Icons.hourglass_bottom,
                         title: "Menunggu",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
-                        onTap: () {},
+                        onTap: () => _openSurauList("Pending"),
                       ),
                       ReportCard(
                         icon: Icons.business,
                         title: "Pejabat Agama (PAID)",
                         count: totalPaids,
                         color: Colors.blue.shade700,
-                        onTap: () {},
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Fungsi ini belum tersedia."),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
                       ),
                       ReportCard(
-                      buildReportCard(
                         icon: Icons.people,
                         title: "Pengguna",
                         count: totalUsers,
                         color: Colors.teal.shade700,
-                        onTap: () {},
-                      ),
-                      buildReportCard(
-                        icon: Icons.admin_panel_settings,
-                        title: "Admin PAID Pending",
-                        count: pendingAdmins.length,
-                        color: Colors.redAccent,
                         onTap: () {
-                          showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (_) {
-                                return SizedBox(
-                                  height: MediaQuery.of(context).size.height * 0.7,
-                                  child: ListView.builder(
-                                    itemCount: pendingAdmins.length,
-                                    itemBuilder: (context, index) {
-                                      final admin = pendingAdmins[index];
-                                      return ListTile(
-                                        title: Text(admin['username']),
-                                        subtitle: Text(admin['email'] ?? ''),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.check, color: Colors.green),
-                                              onPressed: () => approveAdmin(admin['id']),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.close, color: Colors.red),
-                                              onPressed: () => rejectAdmin(admin['id']),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              });
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ManageUsersPage()),
+                          );
                         },
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 30),
-
                   const Text(
                     "Taburan Status Surau",
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF87AC4F),
-                    ),
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF87AC4F)),
                   ),
-                  Center(
-                    child: SizedBox(
-                      height: 250,
-                      width: 250,
-                      child: PieChart(
-                        PieChartData(
-                          sections: [
-                            PieChartSectionData(
-                              color: const Color(0xFF87AC4F),
-                              value: approvedSuraus.toDouble(),
-                              title: "Diluluskan\n$approvedSuraus",
-                              radius: 70,
-                              titleStyle: const TextStyle(color: Colors.white),
-                            ),
-                            PieChartSectionData(
-                              color: Colors.orange.shade700,
-                              value: pendingSuraus.toDouble(),
-                              title: "Menunggu\n$pendingSuraus",
-                              radius: 70,
-                              titleStyle: const TextStyle(color: Colors.white),
-                            ),
-                          ],
-                          borderData: FlBorderData(show: false),
-                          centerSpaceRadius: 45,
-                          sectionsSpace: 4,
-                        ),
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 10),
+                  Center(child: _buildPieChart()),
                 ],
               ),
             ),
     );
   }
+
+  Widget _buildPieChart() {
+    final approved = approvedSuraus.toDouble();
+    final pending = pendingSuraus.toDouble();
+    final total = (approved + pending) == 0 ? 1 : (approved + pending);
+
+    return SizedBox(
+      height: 250,
+      width: 250,
+      child: PieChart(
+        PieChartData(
+          borderData: FlBorderData(show: false),
+          sectionsSpace: 4,
+          centerSpaceRadius: 45,
+          sections: [
+            PieChartSectionData(
+              color: const Color(0xFF87AC4F),
+              value: (approved / total) * 100,
+              title: "Diluluskan\n$approvedSuraus",
+              radius: 70,
+              titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
+            ),
+            PieChartSectionData(
+              color: Colors.orange.shade700,
+              value: (pending / total) * 100,
+              title: "Menunggu\n$pendingSuraus",
+              radius: 70,
+              titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// 🔹 Kad laporan dengan animasi hover
-class ReportCard extends StatefulWidget {
+class ReportCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final int count;
@@ -321,36 +238,19 @@ class ReportCard extends StatefulWidget {
   });
 
   @override
-  State<ReportCard> createState() => _ReportCardState();
-}
-
-class _ReportCardState extends State<ReportCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isHovered ? 1.05 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: widget.color.withOpacity(0.35)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.35)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -400,6 +300,7 @@ class SurauListPage extends StatelessWidget {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
+
           final suraus = snapshot.data!.docs;
           if (suraus.isEmpty) {
             return const Center(child: Text("Tiada surau dijumpai."));

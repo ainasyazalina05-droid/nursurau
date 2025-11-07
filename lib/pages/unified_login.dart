@@ -134,25 +134,6 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      backgroundColor: const Color(0xFFEFF3E0), // Soft greenish background
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "PORTAL NURSURAU 🌿🕌",
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4C6B2C),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 25),
-=======
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -161,7 +142,6 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
             'assets/background_image.png', 
             fit: BoxFit.cover,
           ),
->>>>>>> 0568c68b8ce85be68edaa87f966336989071e61e
 
               Image.asset('assets/logo.png', width: 180, height: 180),
               const SizedBox(height: 20),
@@ -224,8 +204,6 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }
