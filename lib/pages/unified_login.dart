@@ -66,7 +66,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
           return;
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Kata laluan salah.")),
+            const SnackBar(content: Text("Maklumat log masuk tidak sah.")),
           );
           return;
         }
@@ -87,7 +87,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Kata laluan salah.")),
+            const SnackBar(content: Text("Maklumat log masuk tidak sah.")),
           );
         }
         return;
@@ -113,7 +113,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Kata laluan salah.")),
+            const SnackBar(content: Text("Maklumat log masuk tidak sah.")),
           );
         }
         return;
