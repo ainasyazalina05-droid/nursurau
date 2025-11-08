@@ -106,7 +106,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFF87AC4F), // Green background
       appBar: AppBar(
-  backgroundColor: const Color(0xFF4E6C1E), // warna hijau tua
+  backgroundColor: const Color(0xFF87AC4F), 
   centerTitle: true,
   title: const Text(
     "Dashboard PAID NurSurau",

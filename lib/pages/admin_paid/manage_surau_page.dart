@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nursurau/pages/unified_login.dart'; // import login page
 
 class ManageSurauPage extends StatefulWidget {
   final String docId;
@@ -15,47 +14,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
   Map<String, dynamic>? ajkData;
   bool isLoading = true;
   String? errorMessage;
-
-  // ✅ Logout function
-  void _logout(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
-      (route) => false,
-    );
-  }
-
-  // ✅ Logout confirmation dialog
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text("Log Keluar"),
-          content: const Text("Adakah anda pasti mahu log keluar?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Batal", style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF87AC4F),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                _logout(context);
-              },
-              child: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   void initState() {
@@ -84,7 +42,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  // 🔥 Fungsi untuk sahkan & update status surau
   Future<void> _confirmAndUpdateStatus(String newStatus) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -145,10 +102,12 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           setState(() {
             surauData?['status'] = newStatus;
           });
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
+                'Status telah dikemas kini kepada ${_translateStatus(newStatus)}',
+              ),
               backgroundColor:
                   newStatus == 'approved' ? Colors.green : Colors.red,
             ),
@@ -186,7 +145,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  Widget _buildInfoCard(String title, Map<String, String> info) {
+  // ✅ FIX: info boleh dynamic, bukan wajib String
+  Widget _buildInfoCard(String title, Map<String, dynamic> info) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -206,11 +166,12 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
               ),
             ),
             const Divider(),
+
             ...info.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Text(
-                  "${e.key} : ${e.value}",
+                  "${e.key} : ${e.value ?? '-'}",
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
@@ -231,24 +192,12 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
 
     if (errorMessage != null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text("Pengurusan Surau"),
-          backgroundColor: const Color(0xFF87AC4F),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: TextButton.icon(
-                onPressed: () => _showLogoutDialog(context),
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
-                style: TextButton.styleFrom(foregroundColor: Colors.white),
-              ),
-            ),
-          ],
-        ),
+        appBar: AppBar(title: const Text("Pengurusan Surau")),
         body: Center(
-          child: Text("Ralat: $errorMessage",
-              style: const TextStyle(color: Colors.red)),
+          child: Text(
+            "Ralat: $errorMessage",
+            style: const TextStyle(color: Colors.red),
+          ),
         ),
       );
     }
@@ -258,19 +207,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF87AC4F),
-        title: const Text("Pengurusan Surau",
-            style: TextStyle(color: Colors.white)),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextButton.icon(
-              onPressed: () => _showLogoutDialog(context),
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-            ),
-          ),
-        ],
+        title: const Text(
+          "Pengurusan Surau",
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -281,7 +221,9 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
               "Nama Surau": data['surauName'] ?? '-',
               "Alamat": data['surauAddress'] ?? '-',
             }),
+
             const SizedBox(height: 20),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -295,7 +237,9 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 30),
+
             if ((data['status'] ?? '') == 'pending')
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -320,12 +264,15 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
                   ),
                 ],
               ),
+
             const SizedBox(height: 20),
+
             if (ajkData != null)
               _buildInfoCard("Maklumat AJK", {
                 "Nama AJK": ajkData?['ajkName'] ?? '-',
                 "No. IC": ajkData?['ic'] ?? '-',
                 "No. Telefon": ajkData?['phone'] ?? '-',
+                "Emel": ajkData?['email'] ?? '-',
                 "Kata Laluan": ajkData?['password'] ?? '-',
               }),
           ],
