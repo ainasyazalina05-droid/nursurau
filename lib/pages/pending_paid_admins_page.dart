@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nursurau/pages/admin_paid/paid_appbar.dart';
 
 class PendingPaidAdminsPage extends StatefulWidget {
   const PendingPaidAdminsPage({super.key});
@@ -23,22 +24,25 @@ class _PendingPaidAdminsPageState extends State<PendingPaidAdminsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Superadmin - PAID Pending Approval"),
-        backgroundColor: const Color(0xFF87AC4F),
+     // ✅ Use PaidAppBar with white back button
+      appBar: const PaidAppBar(
+        title: "ADMIN PAID PENDING",
+        showBackButton: true, // This makes the back icon white
       ),
+
+
       body: StreamBuilder<QuerySnapshot>(
         stream: paidCollection
-        .where('userType', isEqualTo: 'PAID')
-        .where('status', isEqualTo: 'pending')
-        .snapshots(),
-
+            .where('userType', isEqualTo: 'PAID')
+            .where('status', isEqualTo: 'pending')
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Tiada admin PAID untuk diluluskan."));
+            return const Center(
+                child: Text("Tiada admin PAID untuk diluluskan."));
           }
 
           final docs = snapshot.data!.docs;

@@ -134,7 +134,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F7F3),
+      backgroundColor: const Color(0xFF87AC4F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF87AC4F),
         title: const Text(
@@ -178,7 +178,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF87AC4F)),
+                        color: Colors.white),
                   ),
                   const SizedBox(height: 20),
                   GridView.count(
@@ -244,7 +244,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF87AC4F)),
+                        color: Colors.white),
                   ),
                   const SizedBox(height: 10),
                   Center(child: _buildPieChart()),
@@ -269,7 +269,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           centerSpaceRadius: 45,
           sections: [
             PieChartSectionData(
-              color: const Color(0xFF87AC4F),
+              color: Colors.brown,
               value: (approved / total) * 100,
               title: "Diluluskan\n$approvedSuraus",
               radius: 70,

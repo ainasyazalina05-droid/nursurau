@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class PaidAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
-  const PaidAppBar({super.key, required this.title});
+  const PaidAppBar({super.key, required this.title, required bool showBackButton});
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(

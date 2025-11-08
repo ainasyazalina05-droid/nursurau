@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:nursurau/pages/unified_login.dart';
 
 class ManageUsersPage extends StatefulWidget {
   const ManageUsersPage({super.key});
@@ -9,7 +10,48 @@ class ManageUsersPage extends StatefulWidget {
 }
 
 class _ManageUsersPageState extends State<ManageUsersPage> {
-  final Color themeColor = Color(0xFF87AC4F);
+  final Color themeColor = const Color(0xFF87AC4F);
+
+  // ✅ Logout function
+  void _logout(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
+      (route) => false,
+    );
+  }
+
+  // ✅ Logout confirmation dialog
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text("Log Keluar"),
+          content: const Text("Adakah anda pasti mahu log keluar?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeColor,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                _logout(context);
+              },
+              child: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> updateUserRoleAndStatus(String username, String newRole,
       {String? newStatus}) async {
@@ -28,7 +70,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         SnackBar(
           content: Text(
               "Peranan dikemas kini kepada $newRole${newStatus != null ? ' & status $newStatus' : ''}"),
-          backgroundColor: Color(0xFF87AC4F),
+          backgroundColor: themeColor,
         ),
       );
     } catch (e) {
@@ -43,9 +85,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
       await FirebaseFirestore.instance
           .collection('ajk_users')
           .doc(username)
-          .update({
-        'status': newStatus,
-      });
+          .update({'status': newStatus});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Status dikemas kini kepada $newStatus")),
       );
@@ -69,8 +109,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
           .delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Pengguna dipadam."),
-            backgroundColor: Colors.redAccent),
+            content: Text("Pengguna dipadam."), backgroundColor: Colors.redAccent),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,20 +120,52 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     }
   }
 
+  Future<bool> _confirmDelete(BuildContext context, String username) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Padam Pengguna"),
+            content: Text("Adakah anda pasti untuk memadam '$username'?"),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Batal")),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                child: const Text("Padam"),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: themeColor,
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
         title: const Text(
           "Senarai Ahli Jawatankuasa Surau",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton.icon(
+              onPressed: () => _showLogoutDialog(context),
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text("Log Keluar", style: TextStyle(color: Colors.white)),
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+            ),
+          ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance.collection('ajk_users').snapshots(),
+        stream: FirebaseFirestore.instance.collection('ajk_users').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -105,9 +176,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text("Tiada pengguna dijumpai."),
-            );
+            return const Center(child: Text("Tiada pengguna dijumpai."));
           }
 
           final users = snapshot.data!.docs;
@@ -154,17 +223,16 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                             Text("Peranan : ${role == 'ajk' ? 'AJK Surau' : role}",
                                 style: const TextStyle(fontSize: 14)),
                             Text(
-  "Status : ${status == 'approved' ? 'Diluluskan' : status == 'blocked' ? 'Disekat' : status == 'pending' ? 'Menunggu Kelulusan' : status == 'rejected' ? 'Ditolak' : status}",
-  style: const TextStyle(fontSize: 14),
-),
-
+                              "Status : ${status == 'approved' ? 'Diluluskan' : status == 'blocked' ? 'Disekat' : status == 'pending' ? 'Menunggu Kelulusan' : status == 'rejected' ? 'Ditolak' : status}",
+                              style: const TextStyle(fontSize: 14),
+                            ),
                             Text("Nama Surau : $surauName",
                                 style: const TextStyle(fontSize: 14)),
                           ],
                         ),
                       ),
                       PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color:Color(0xFF87AC4F)),
+                        icon: const Icon(Icons.more_vert, color: Color(0xFF87AC4F)),
                         onSelected: (value) async {
                           switch (value) {
                             case 'ajk':
@@ -219,27 +287,5 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         },
       ),
     );
-  }
-
-  Future<bool> _confirmDelete(BuildContext context, String username) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Padam Pengguna"),
-            content: Text("Adakah anda pasti untuk memadam '$username'?"),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text("Batal")),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent),
-                child: const Text("Padam"),
-              ),
-            ],
-          ),
-        ) ??
-        false;
   }
 }
