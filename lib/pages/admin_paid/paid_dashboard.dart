@@ -106,29 +106,28 @@ class _PaidDashboardState extends State<PaidDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFF87AC4F), // Green background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF87AC4F), // Match AppBar to background
-        centerTitle: true,
-        title: const Text(
-          "Dashboard PAID NurSurau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white, // Text & icon color
-              ),
-              onPressed: () => _showLogoutDialog(context),
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text(
-                "Log Keluar",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
+  backgroundColor: const Color(0xFF4E6C1E), // warna hijau tua
+  centerTitle: true,
+  title: const Text(
+    "Dashboard PAID NurSurau",
+    style: TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  actions: [
+    IconButton(
+      onPressed: () => _showLogoutDialog(context),
+      icon: const Icon(
+        Icons.logout,
+        color: Colors.white,
+        size: 30, // BESARKAN ICON
       ),
+      mouseCursor: SystemMouseCursors.click, // cursor jari bila hover
+    ),
+  ],
+),
+
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
@@ -276,49 +275,68 @@ class ReportCard extends StatefulWidget {
 }
 
 class _ReportCardState extends State<ReportCard> {
+  bool hover = false;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.85), // semi-transparent white
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: widget.color.withOpacity(0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(widget.icon, size: 46, color: widget.color),
-            const SizedBox(height: 10),
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.color.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => hover = true),
+            onExit: (_) => setState(() => hover = false),
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: AnimatedScale(
+                scale: hover ? 1.25 : 1.0,      // bigger bila hover
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                child: Icon(
+                  widget.icon,
+                  size: 46,
+                  color: widget.color,
+                ),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              widget.count.toString(),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: widget.color,
-              ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            widget.count.toString(),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: widget.color,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
+
