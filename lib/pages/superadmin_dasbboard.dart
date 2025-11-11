@@ -44,7 +44,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      // 🔹 PAID Admins (from users collection)
+      // 🔹 PAID Admins
       final paidSnapshot = await firestore
           .collection('users')
           .where('userType', isEqualTo: 'PAID')
@@ -75,7 +75,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     }
   }
 
-  // ✅ Show logout confirmation dialog
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -113,7 +112,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
   }
 
-  // ✅ Perform logout and go to login page
   void _logout(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
@@ -138,7 +136,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF87AC4F),
         title: const Text(
-          "Dashboard SuperAdmin NurSurau",
+          "DASHBOARD SUPERADMIN NURSURAU",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -149,12 +147,13 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               onPressed: () => _showLogoutDialog(context),
               icon: const Icon(Icons.logout, color: Colors.white),
               label: const Text(
-                "Log Keluar",
+                "LOG KELUAR",
                 style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF87AC4F),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -162,7 +161,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             ),
           ),
         ],
-
       ),
       body: isLoading
           ? const Center(
@@ -174,7 +172,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Selamat Datang, SuperAdmin!",
+                    "SELAMAT DATANG, SUPERADMIN!",
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -190,28 +188,28 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     children: [
                       ReportCard(
                         icon: Icons.mosque,
-                        title: "Keseluruhan Surau",
+                        title: "KESELURUHAN SURAU",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
                         onTap: () => _openSurauList("All"),
                       ),
                       ReportCard(
                         icon: Icons.check_circle,
-                        title: "Diluluskan",
+                        title: "DILULUSKAN",
                         count: approvedSuraus,
                         color: const Color(0xFF87AC4F),
                         onTap: () => _openSurauList("Approved"),
                       ),
                       ReportCard(
                         icon: Icons.hourglass_bottom,
-                        title: "Menunggu",
+                        title: "MENUNGGU",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
                         onTap: () => _openSurauList("Pending"),
                       ),
                       ReportCard(
                         icon: Icons.business,
-                        title: "Admin PAID",
+                        title: "ADMIN PAID",
                         count: totalPaids,
                         color: Colors.blue.shade700,
                         onTap: () {
@@ -225,7 +223,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       ),
                       ReportCard(
                         icon: Icons.people,
-                        title: "Pengguna",
+                        title: "PENGGUNA",
                         count: totalUsers,
                         color: Colors.teal.shade700,
                         onTap: () {
@@ -239,12 +237,15 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  const Text(
-                    "Taburan Status Surau",
-                    style: TextStyle(
+                  Center(
+                    child: Text(
+                      "TABURAN STATUS",
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Center(child: _buildPieChart()),
@@ -296,8 +297,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 }
 
-// ✅ Reuse your ReportCard + SurauListPage as before
-class ReportCard extends StatelessWidget {
+// ✅ ReportCard with hover effect
+class ReportCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final int count;
@@ -314,43 +315,68 @@ class ReportCard extends StatelessWidget {
   });
 
   @override
+  State<ReportCard> createState() => _ReportCardState();
+}
+
+class _ReportCardState extends State<ReportCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 46, color: color),
-            const SizedBox(height: 10),
-            Text(title,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: _isHovered
+              ? (Matrix4.identity()..scale(1.03))
+              : Matrix4.identity(),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: widget.color.withOpacity(0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: _isHovered
+                    ? Colors.black.withOpacity(0.15)
+                    : Colors.black.withOpacity(0.05),
+                blurRadius: _isHovered ? 12 : 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.icon, size: 46, color: widget.color),
+              const SizedBox(height: 10),
+              Text(
+                widget.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            Text(count.toString(),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                widget.count.toString(),
                 style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-          ],
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: widget.color,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+// ✅ SurauListPage
 class SurauListPage extends StatelessWidget {
   final String statusFilter;
 
@@ -364,51 +390,112 @@ class SurauListPage extends StatelessWidget {
         : query.where('status', isEqualTo: statusFilter.toLowerCase());
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F6F3),
       appBar: AppBar(
         backgroundColor: const Color(0xFF87AC4F),
         title: Text(
-          statusFilter == "All" ? "Semua Surau" : "Surau $statusFilter",
+          statusFilter == "All"
+              ? "Senarai Keseluruhan Surau"
+              : "Surau ${statusFilter.toUpperCase()}",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: filteredQuery.snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
+            );
           }
 
           final suraus = snapshot.data!.docs;
           if (suraus.isEmpty) {
-            return const Center(child: Text("Tiada surau dijumpai."));
+            return const Center(
+              child: Text(
+                "Tiada surau dijumpai.",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: suraus.length,
             itemBuilder: (context, index) {
               final data = suraus[index].data() as Map<String, dynamic>? ?? {};
+              final surauName = data['surauName'] ?? 'Nama tidak diketahui';
+              final surauAddress =
+                  data['surauAddress'] ?? 'Alamat tidak tersedia';
+              final status = (data['status'] ?? '-').toString();
 
-              return ListTile(
-                title: Text(data['surauName'] ?? '-'),
-                subtitle: Text(data['surauAddress'] ?? '-'),
-                trailing: Text(
-                  (data['status'] ?? '-').toString().toUpperCase(),
-                  style: TextStyle(
-                    color: data['status'] == 'approved'
-                        ? Colors.green
-                        : data['status'] == 'pending'
-                            ? Colors.orange
-                            : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Color statusColor;
+              if (status == 'approved') {
+                statusColor = Colors.green.shade700;
+              } else if (status == 'pending') {
+                statusColor = Colors.orange.shade700;
+              } else {
+                statusColor = Colors.red.shade700;
+              }
+
+              return Card(
+                elevation: 4,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ManageSurauPage(docId: suraus[index].id),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  title: Text(
+                    surauName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E4A1E),
                     ),
-                  );
-                },
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      surauAddress,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      border: Border.all(color: statusColor),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ManageSurauPage(docId: suraus[index].id),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );
