@@ -149,7 +149,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         title: const Text(
-          "Senarai Ahli Jawatankuasa Surau",
+          "SENARAI AHLI JAWATANKUASA SURAU",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [

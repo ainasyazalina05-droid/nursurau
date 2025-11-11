@@ -109,7 +109,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
   backgroundColor: const Color(0xFF87AC4F), 
   centerTitle: true,
   title: const Text(
-    "Dashboard PAID NurSurau",
+    "DASHBOARD PAID NURSURAU",
     style: TextStyle(
       color: Colors.white,
       fontWeight: FontWeight.bold,
@@ -138,7 +138,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Selamat Datang, Admin PAID!",
+                    "SELAMAT DATANG , ADMIN PAID!",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -157,28 +157,28 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     children: [
                       ReportCard(
                         icon: Icons.mosque,
-                        title: "Keseluruhan Surau",
+                        title: "KESELURUHAN SURAU",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
                         onTap: () => _openAdminPage("All"),
                       ),
                       ReportCard(
                         icon: Icons.check_circle,
-                        title: "Diluluskan",
+                        title: "DILULUSKAN",
                         count: approvedSuraus,
                         color: Colors.green.shade700,
                         onTap: () => _openAdminPage("Approved"),
                       ),
                       ReportCard(
                         icon: Icons.hourglass_bottom,
-                        title: "Menunggu",
+                        title: "MENUNGGU",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
                         onTap: () => _openAdminPage("Pending"),
                       ),
                       ReportCard(
                         icon: Icons.people,
-                        title: "Pengguna",
+                        title: "PENGGUNA",
                         count: totalAjk,
                         color: Colors.teal.shade700,
                         onTap: () {
@@ -195,14 +195,18 @@ class _PaidDashboardState extends State<PaidDashboard> {
                   const SizedBox(height: 30),
 
                   // Pie chart
-                  const Text(
-                    "Taburan Status Surau",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                 Center(
+  child: const Text(
+    "TABURAN STATUS SURAU",
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+),
+
                   const SizedBox(height: 10),
                   Center(child: _buildPieChart()),
                 ],
@@ -217,8 +221,8 @@ class _PaidDashboardState extends State<PaidDashboard> {
     final total = (approved + pending) == 0 ? 1 : (approved + pending);
 
     return SizedBox(
-      height: 250,
-      width: 250,
+      height: 300,
+      width: 300,
       child: PieChart(
         PieChartData(
           borderData: FlBorderData(show: false),
@@ -228,14 +232,14 @@ class _PaidDashboardState extends State<PaidDashboard> {
             PieChartSectionData(
               color: Colors.brown,
               value: (approved / total) * 100,
-              title: "Diluluskan\n$approvedSuraus",
+              title: "DILULUSKAN\n$approvedSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),
             PieChartSectionData(
               color: Colors.orange.shade700,
               value: (pending / total) * 100,
-              title: "Menunggu\n$pendingSuraus",
+              title: "MENUNGGU\n$pendingSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),

@@ -52,10 +52,10 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
         centerTitle: true,
         title: Text(
           isPendingPage
-              ? 'Senarai Surau Menunggu'
+              ? 'SENARAI SURAU MENUNGGU'
               : isApprovedPage
-                  ? 'Senarai Surau Diluluskan'
-                  : 'Keseluruhan Surau',
+                  ? 'SENARAI SURAU DILULUSKAN'
+                  : 'KESELURUHAN SURAU',
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
@@ -200,7 +200,7 @@ class _AdminPaidPageState extends State<AdminPaidPage> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content: Text(
-                                            'Tiada surauId. Sila buka halaman Urus untuk sync data.')),
+                                            '.')),
                                   );
                                   Navigator.push(
                                     context,
