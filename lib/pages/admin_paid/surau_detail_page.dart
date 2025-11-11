@@ -57,7 +57,7 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Maklumat Surau",
+          "MAKLUMAT SURAU",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF87AC4F),
