@@ -31,7 +31,6 @@ class _PaidDashboardState extends State<PaidDashboard> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // 🕌 Kira semua surau
       final surauSnapshot = await firestore.collection('form').get();
       final approvedSnapshot = await firestore
           .collection('form')
@@ -41,8 +40,6 @@ class _PaidDashboardState extends State<PaidDashboard> {
           .collection('form')
           .where('status', isEqualTo: 'pending')
           .get();
-
-      // 👥 Kira semua pengguna (AJK)
       final ajkSnapshot = await firestore.collection('ajk_users').get();
 
       setState(() {
@@ -58,7 +55,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
     }
   }
 
-  void _logout() {
+  void _logout(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const UnifiedLoginPage()),
@@ -66,46 +63,71 @@ class _PaidDashboardState extends State<PaidDashboard> {
     );
   }
 
+  // ✅ Function to show logout confirmation dialog
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Log Keluar"),
-        content: const Text("Adakah anda pasti ingin log keluar?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _logout();
-            },
-            child: const Text("Ya, Log Keluar"),
-          ),
-        ],
-      ),
+          title: const Text("Log Keluar"),
+          content: const Text("Adakah anda pasti mahu log keluar?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Cancel
+              child: const Text(
+                "Batal",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor:  Color(0xFF87AC4F),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _logout(context); // Continue logout
+              },
+              child: const Text(
+                "Log Keluar",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F7F3),
+      backgroundColor: const Color(0xFF87AC4F), // Green background
       appBar: AppBar(
-        centerTitle: true,
-        title: const Text(
-          "Dashboard PAID NurSurau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => _showLogoutDialog(context),
-            icon: const Icon(Icons.logout, color: Colors.white),
-          ),
-        ],
+  backgroundColor: const Color(0xFF87AC4F), 
+  centerTitle: true,
+  title: const Text(
+    "DASHBOARD PAID NURSURAU",
+    style: TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  actions: [
+    IconButton(
+      onPressed: () => _showLogoutDialog(context),
+      icon: const Icon(
+        Icons.logout,
+        color: Colors.white,
+        size: 30, // BESARKAN ICON
       ),
+      mouseCursor: SystemMouseCursors.click, // cursor jari bila hover
+    ),
+  ],
+),
+
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF87AC4F)),
@@ -116,14 +138,19 @@ class _PaidDashboardState extends State<PaidDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Selamat Datang, Admin PAID!",
+                    "SELAMAT DATANG , ADMIN PAID!",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF87AC4F),
+                      color: Colors.white, // White text to contrast green
                     ),
                   ),
                   const SizedBox(height: 20),
+<<<<<<< HEAD
+=======
+
+                  // Report cards
+>>>>>>> 0e4038fc063700425527a7fdeee896dfe69815a9
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -133,28 +160,28 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     children: [
                       ReportCard(
                         icon: Icons.mosque,
-                        title: "Keseluruhan Surau",
+                        title: "KESELURUHAN SURAU",
                         count: totalSuraus,
                         color: const Color(0xFF87AC4F),
                         onTap: () => _openAdminPage("All"),
                       ),
                       ReportCard(
                         icon: Icons.check_circle,
-                        title: "Diluluskan",
+                        title: "DILULUSKAN",
                         count: approvedSuraus,
                         color: Colors.green.shade700,
                         onTap: () => _openAdminPage("Approved"),
                       ),
                       ReportCard(
                         icon: Icons.hourglass_bottom,
-                        title: "Menunggu",
+                        title: "MENUNGGU",
                         count: pendingSuraus,
                         color: Colors.orange.shade800,
                         onTap: () => _openAdminPage("Pending"),
                       ),
                       ReportCard(
                         icon: Icons.people,
-                        title: "Pengguna",
+                        title: "PENGGUNA",
                         count: totalAjk,
                         color: Colors.teal.shade700,
                         onTap: () {
@@ -168,6 +195,7 @@ class _PaidDashboardState extends State<PaidDashboard> {
                     ],
                   ),
                   const SizedBox(height: 30),
+<<<<<<< HEAD
                   const Text(
                     "Taburan Status Surau",
                     style: TextStyle(
@@ -176,6 +204,22 @@ class _PaidDashboardState extends State<PaidDashboard> {
                       color: Color(0xFF87AC4F),
                     ),
                   ),
+=======
+
+                  // Pie chart
+                 Center(
+  child: const Text(
+    "TABURAN STATUS SURAU",
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+),
+
+>>>>>>> 0e4038fc063700425527a7fdeee896dfe69815a9
                   const SizedBox(height: 10),
                   Center(child: _buildPieChart()),
                 ],
@@ -190,8 +234,8 @@ class _PaidDashboardState extends State<PaidDashboard> {
     final total = (approved + pending) == 0 ? 1 : (approved + pending);
 
     return SizedBox(
-      height: 250,
-      width: 250,
+      height: 300,
+      width: 300,
       child: PieChart(
         PieChartData(
           borderData: FlBorderData(show: false),
@@ -199,16 +243,16 @@ class _PaidDashboardState extends State<PaidDashboard> {
           centerSpaceRadius: 45,
           sections: [
             PieChartSectionData(
-              color: const Color(0xFF87AC4F),
+              color: Colors.brown,
               value: (approved / total) * 100,
-              title: "Diluluskan\n$approvedSuraus",
+              title: "DILULUSKAN\n$approvedSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),
             PieChartSectionData(
               color: Colors.orange.shade700,
               value: (pending / total) * 100,
-              title: "Menunggu\n$pendingSuraus",
+              title: "MENUNGGU\n$pendingSuraus",
               radius: 70,
               titleStyle: const TextStyle(fontSize: 13, color: Colors.white),
             ),
@@ -244,6 +288,7 @@ class ReportCard extends StatelessWidget {
   });
 
   @override
+<<<<<<< HEAD
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
@@ -276,7 +321,77 @@ class ReportCard extends StatelessWidget {
                     fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
+=======
+  State<ReportCard> createState() => _ReportCardState();
+}
+
+class _ReportCardState extends State<ReportCard> {
+  bool hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.color.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => hover = true),
+            onExit: (_) => setState(() => hover = false),
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: AnimatedScale(
+                scale: hover ? 1.25 : 1.0,      // bigger bila hover
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                child: Icon(
+                  widget.icon,
+                  size: 46,
+                  color: widget.color,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            widget.count.toString(),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: widget.color,
+            ),
+          ),
+        ],
+>>>>>>> 0e4038fc063700425527a7fdeee896dfe69815a9
       ),
     );
   }
 }
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 0e4038fc063700425527a7fdeee896dfe69815a9

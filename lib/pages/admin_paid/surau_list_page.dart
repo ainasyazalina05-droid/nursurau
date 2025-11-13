@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'manage_surau_page.dart';
-import 'view_surau_page.dart'; // ✅ Tambah ni
 
 class SurauListPage extends StatelessWidget {
   final String filter;

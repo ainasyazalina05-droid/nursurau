@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nursurau/pages/admin_paid/paid_appbar.dart';
 
 class ApprovedSurausPage extends StatelessWidget {
   const ApprovedSurausPage({super.key});
@@ -22,10 +21,18 @@ class ApprovedSurausPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7F3),
-
-      // ✅ GUNA PaidAppBar TERUS
-      appBar: const PaidAppBar(title: "Senarai Surau Diluluskan"),
-
+      appBar: AppBar(
+        title: const Text(
+          "Senarai Surau Diluluskan",
+          style: TextStyle(
+            color: Colors.white,   // white text
+            fontWeight: FontWeight.bold, // bold text
+          ),
+        ),
+        centerTitle: true,  // center the title
+        backgroundColor: Colors.blue, // change as needed
+        elevation: 0,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('suraus')
@@ -62,7 +69,6 @@ class ApprovedSurausPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Gambar Surau
                     ClipRRect(
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),

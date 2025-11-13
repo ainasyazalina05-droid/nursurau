@@ -51,8 +51,13 @@ class _SurauDetailPageState extends State<SurauDetailPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
+<<<<<<< HEAD
           'Maklumat Surau',
           style: TextStyle(color: Colors.white),
+=======
+          "MAKLUMAT SURAU",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+>>>>>>> 0e4038fc063700425527a7fdeee896dfe69815a9
         ),
         backgroundColor: const Color(0xFF87AC4F),
         iconTheme: const IconThemeData(color: Colors.white),

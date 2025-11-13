@@ -42,7 +42,6 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  // 🔥 Fungsi untuk sahkan & update status surau
   Future<void> _confirmAndUpdateStatus(String newStatus) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -75,14 +74,11 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
         final formRef =
             FirebaseFirestore.instance.collection('form').doc(widget.docId);
 
-        // 🟢 Update status dalam 'form'
         await formRef.update({'status': newStatus});
 
-        // Ambil semula data form
         final formSnap = await formRef.get();
         final formData = formSnap.data();
 
-        // Sync ke 'suraus'
         final surauRef =
             FirebaseFirestore.instance.collection('suraus').doc(widget.docId);
 
@@ -106,10 +102,12 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
           setState(() {
             surauData?['status'] = newStatus;
           });
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'Status telah dikemas kini kepada ${_translateStatus(newStatus)}'),
+                'Status telah dikemas kini kepada ${_translateStatus(newStatus)}',
+              ),
               backgroundColor:
                   newStatus == 'approved' ? Colors.green : Colors.red,
             ),
@@ -147,7 +145,8 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     }
   }
 
-  Widget _buildInfoCard(String title, Map<String, String> info) {
+  // ✅ FIX: info boleh dynamic, bukan wajib String
+  Widget _buildInfoCard(String title, Map<String, dynamic> info) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -167,11 +166,12 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
               ),
             ),
             const Divider(),
+
             ...info.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Text(
-                  "${e.key} : ${e.value}",
+                  "${e.key} : ${e.value ?? '-'}",
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
@@ -194,8 +194,10 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
       return Scaffold(
         appBar: AppBar(title: const Text("Pengurusan Surau")),
         body: Center(
-          child: Text("Ralat: $errorMessage",
-              style: const TextStyle(color: Colors.red)),
+          child: Text(
+            "Ralat: $errorMessage",
+            style: const TextStyle(color: Colors.red),
+          ),
         ),
       );
     }
@@ -203,71 +205,109 @@ class _ManageSurauPageState extends State<ManageSurauPage> {
     final data = surauData ?? {};
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF87AC4F),
-        title: const Text("Pengurusan Surau",
-            style: TextStyle(color: Colors.white)),
+  appBar: AppBar(
+    backgroundColor: const Color(0xFF87AC4F),
+
+    // putihkan ikon back
+    iconTheme: const IconThemeData(
+      color: Colors.white,
+    ),
+
+    title: const Text(
+      "PENGURUSAN SURAU",
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    ),
+
+    automaticallyImplyLeading: true, // pastikan arrow muncul
+  ),
+
+  body: SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        // INFO SURAU
+        _buildInfoCard("Maklumat Surau", {
+          "Nama Surau": data['surauName'] ?? '-',
+          "Alamat": data['surauAddress'] ?? '-',
+        }),
+
+        // INFO AJK (version data)
+        _buildInfoCard("Maklumat AJK", {
+          "Nama AJK": data['ajkName'] ?? '-',
+          "No. IC": data['ic'] ?? '-',
+          "No. Telefon": data['phone'] ?? '-',
+          "Emel": data['email'] ?? '-',
+        }),
+
+        const SizedBox(height: 20),
+
+        // STATUS
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildInfoCard("Maklumat Surau", {
-              "Nama Surau": data['surauName'] ?? '-',
-              "Alamat": data['surauAddress'] ?? '-',
-            }),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Status: ", style: TextStyle(fontSize: 16)),
-                Text(
-                  (data['status'] ?? '-').toString().toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _statusColor(data['status']),
-                  ),
-                ),
-              ],
+            const Text(
+              "Status: ",
+              style: TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 30),
-            if ((data['status'] ?? '') == 'pending')
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () => _confirmAndUpdateStatus("approved"),
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text("Luluskan"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF87AC4F),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _confirmAndUpdateStatus("rejected"),
-                    icon: const Icon(Icons.cancel_outlined),
-                    label: const Text("Tolak"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
+            Text(
+              (data['status'] ?? '-').toString().toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: _statusColor(data['status']),
               ),
-            const SizedBox(height: 20),
-            if (ajkData != null)
-              _buildInfoCard("Maklumat AJK", {
-                "Nama AJK": ajkData?['ajkName'] ?? '-',
-                "No. IC": ajkData?['ic'] ?? '-',
-                "No. Telefon": ajkData?['phone'] ?? '-',
-                "Emel": ajkData?['email'] ?? '-',
-                "Kata Laluan": ajkData?['password'] ?? '-',
-              }),
+            ),
           ],
         ),
-      ),
-    );
+
+        const SizedBox(height: 30),
+
+        // BUTTON ACTIONS JIKA PENDING
+        if ((data['status'] ?? '') == 'pending')
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _confirmAndUpdateStatus("approved"),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text("Luluskan"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF87AC4F),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _confirmAndUpdateStatus("rejected"),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text("Tolak"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+
+        const SizedBox(height: 20),
+
+        // INFO AJK (jika ajkData wujud)
+        if (ajkData != null)
+          _buildInfoCard("Maklumat AJK", {
+            "Nama AJK": ajkData?['ajkName'] ?? '-',
+            "No. IC": ajkData?['ic'] ?? '-',
+            "No. Telefon": ajkData?['phone'] ?? '-',
+            "Emel": ajkData?['email'] ?? '-',
+            "Kata Laluan": ajkData?['password'] ?? '-',
+          }),
+
+      ],
+    ),
+  ),
+);
   }
 }
